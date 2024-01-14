@@ -1,0 +1,41 @@
+* Example beancount file
+                   
+** Random metadata stuff
+option "operating_currency" "GBP"
+2000-01-01 custom "fava-option" "language" "en"
+2000-01-01 commodity GBP
+  name: "British Pound"
+
+** Open accounts
+2023-01-01 open Equity:Bals
+2023-01-01 open Assets:Bank                 GBP
+2023-01-02 open Assets:Invest               GOO  "FIFO"
+  portfolio: "all"
+2023-01-03 open Expenses:Food               GBP  ;, USD
+2023-01-04 open Income:Job                  GBP
+
+** Transactions
+2023-02-01 * "Salary" ; comment
+  user: "Chris"
+  Assets:Bank                          1000 GBP
+  Income:Job
+
+2023-02-02 * "Buy food"
+  Assets:Bank                          -100 GBP
+  ; comment
+  Expenses:Food                         100 GBP
+
+2023-02-05 * "Shop" "More food" #tag ^link
+  Assets:Bank                        -40.00 GBP
+  Expenses:Food                       40.00 GBP
+
+** Balances and pads
+2023-03-01 pad Assets:Invest Equity:Bals
+2023-03-02 balance Assets:Invest        111 GOO
+2023-03-03 balance Assets:Bank          860 GBP
+
+** Close an account
+2023-12-01 close Assets:Bank
+
+** Prices
+2023-01-01 price GOOG                    50 GBP
