@@ -32,6 +32,7 @@ fn main() {
 fn balance(path: &String) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
     let entries = parser::parse(&text);
-    let directives = parser::consume(entries);
+    let mut directives = parser::consume(entries);
+    parser::sort(&mut directives);
     print_directives(directives);
 }

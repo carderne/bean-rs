@@ -10,6 +10,7 @@ entry = _{
   | balance
   | pad
   | price
+  | document
   | transaction
   | COMMENT
   | space+
@@ -27,6 +28,8 @@ price   = { date ~ space+ ~ "price" ~ space+ ~ ccy ~ space+ ~ amount }
 balance = { date ~ space+ ~ "balance" ~ space+ ~ account ~ space+ ~ amount }
 pad     = { date ~ space+ ~ "pad" ~ space+ ~ account ~ space+ ~ account }
 
+document = { date ~ space+ ~ "document" ~ account ~ space+ ~ path }
+
 transaction   =  { date ~ space+ ~ txn_type ~ space+ ~ payee ~ (space+ ~ narration)? ~ (space+ ~ tag)? ~ (space+ ~ link)? ~ (posting_added | metadata_added)* }
 payee         =  { quoted }
 narration     =  { quoted }
@@ -39,6 +42,7 @@ metadata       =  { space+ ~ key ~ ":" ~ space* ~ val }
 txn_type     =  { "*" | "!" | "txn" }
 key          = @{ ASCII_ALPHA_LOWER+ }
 val          = @{ quoted }
+path         = @{ quoted }
 space        = _{ " " | "\t" }
 quoted       = _{ quote ~ inner_quoted ~ quote }
 inner_quoted =  { (!quote ~ ANY)* }

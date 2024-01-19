@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use pest::iterators::Pairs;
 use pest::Parser;
 
@@ -26,10 +28,18 @@ pub fn consume(entries: Pairs<'_, Rule>) -> Vec<Directive> {
                 Rule::balance => Directive::Balance(directives::Balance::new(entry)),
                 Rule::pad => Directive::Pad(directives::Pad::new(entry)),
                 Rule::price => Directive::Price(directives::Price::new(entry)),
+                Rule::document => Directive::Document(directives::Document::new(entry)),
                 Rule::transaction => Directive::Transaction(directives::Transaction::new(entry)),
                 Rule::EOI => Directive::EOI(directives::EOI::new(entry)),
                 _ => unreachable!("no rule for this entry!"),
             }
         })
         .collect()
+}
+
+pub fn sort(directives: &mut Vec<Directive>) {
+    directives.sort_by(|a, b| match a.date().cmp(&b.date()) {
+        Ordering::Equal => a.order().cmp(&b.order()),
+        other => other,
+    });
 }

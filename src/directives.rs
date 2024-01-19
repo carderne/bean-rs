@@ -4,6 +4,8 @@ use pest::iterators::{Pair, Pairs};
 
 use crate::grammar::Rule;
 
+const BASE_DATE: &str = "0001-01-01";
+
 type Ccy = String;
 type Account = String;
 
@@ -47,6 +49,7 @@ impl Amount {
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigCustom {
+    date: String,
     debug: Debug,
 }
 
@@ -54,7 +57,10 @@ impl ConfigCustom {
     pub fn new(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
         let debug = Debug { line };
-        Self { debug }
+        Self {
+            date: String::from(BASE_DATE),
+            debug,
+        }
     }
 }
 
@@ -66,6 +72,7 @@ impl fmt::Display for ConfigCustom {
 
 #[derive(Debug, PartialEq)]
 pub struct EOI {
+    date: String,
     debug: Debug,
 }
 
@@ -73,7 +80,10 @@ impl EOI {
     pub fn new(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
         let debug = Debug { line };
-        Self { debug }
+        Self {
+            date: String::from(BASE_DATE),
+            debug,
+        }
     }
 }
 
@@ -85,6 +95,7 @@ impl fmt::Display for EOI {
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigOption {
+    date: String,
     key: String,
     val: String,
     debug: Debug,
@@ -97,7 +108,12 @@ impl ConfigOption {
         let val = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
         let debug = Debug { line };
-        Self { key, val, debug }
+        Self {
+            date: String::from(BASE_DATE),
+            key,
+            val,
+            debug,
+        }
     }
 }
 
@@ -184,7 +200,7 @@ impl fmt::Display for Commodity {
         }
         write!(
             f,
-            "{debug}{date} {ccy}{meta}",
+            "{debug}{date} commodity {ccy}{meta}",
             debug = self.debug,
             date = self.date,
             ccy = self.ccy,
@@ -378,6 +394,44 @@ impl fmt::Display for Price {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Document {
+    date: String,
+    account: Account,
+    path: String,
+    debug: Debug,
+}
+
+impl Document {
+    pub fn new(entry: Pair<Rule>) -> Self {
+        let mut pairs = entry.clone().into_inner();
+        let date = pairs.next().unwrap().as_str().to_string();
+        let account = pairs.next().unwrap().as_str().to_string();
+        let path = pairs.next().unwrap().as_str().to_string();
+        let (line, _) = entry.line_col();
+        let debug = Debug { line };
+        Self {
+            date,
+            account,
+            path,
+            debug,
+        }
+    }
+}
+
+impl fmt::Display for Document {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{debug}{date} documenet {account} {path}",
+            debug = self.debug,
+            date = self.date,
+            account = self.account,
+            path = self.path,
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Posting {
     account: Account,
     amount: Option<Amount>,
@@ -515,7 +569,41 @@ pub enum Directive {
     Balance(Balance),
     Pad(Pad),
     Price(Price),
+    Document(Document),
     Transaction(Transaction),
+}
+
+impl Directive {
+    pub fn date(&self) -> &str {
+        match self {
+            Directive::EOI(d) => &d.date,
+            Directive::ConfigCustom(d) => &d.date,
+            Directive::ConfigOption(d) => &d.date,
+            Directive::Commodity(d) => &d.date,
+            Directive::Open(d) => &d.date,
+            Directive::Close(d) => &d.date,
+            Directive::Balance(d) => &d.date,
+            Directive::Pad(d) => &d.date,
+            Directive::Price(d) => &d.date,
+            Directive::Document(d) => &d.date,
+            Directive::Transaction(d) => &d.date,
+        }
+    }
+    pub fn order(&self) -> i8 {
+        match self {
+            Directive::EOI(_) => 0,
+            Directive::ConfigCustom(_) => 0,
+            Directive::ConfigOption(_) => 0,
+            Directive::Commodity(_) => 0,
+            Directive::Open(_) => -2,
+            Directive::Close(_) => 2,
+            Directive::Balance(_) => -1,
+            Directive::Pad(_) => 0,
+            Directive::Price(_) => 0,
+            Directive::Document(_) => 1,
+            Directive::Transaction(_) => 0,
+        }
+    }
 }
 
 impl fmt::Display for Directive {
@@ -530,6 +618,7 @@ impl fmt::Display for Directive {
             Directive::Balance(d) => write!(f, "{d}"),
             Directive::Pad(d) => write!(f, "{d}"),
             Directive::Price(d) => write!(f, "{d}"),
+            Directive::Document(d) => write!(f, "{d}"),
             Directive::Transaction(d) => write!(f, "{d}"),
         }
     }
