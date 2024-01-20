@@ -3,6 +3,7 @@ use std::fmt;
 
 use chrono::NaiveDate;
 use pest::iterators::{Pair, Pairs};
+use rust_decimal::Decimal;
 
 use crate::grammar::Rule;
 
@@ -12,7 +13,7 @@ const DATE_FMT: &str = "%Y-%m-%d";
 type Ccy = String;
 type Account = String;
 
-pub type CcyBal = HashMap<String, f64>;
+pub type CcyBal = HashMap<String, Decimal>;
 pub type AccBal = HashMap<String, CcyBal>;
 
 #[derive(Clone, Debug, Default)]
@@ -34,7 +35,7 @@ impl fmt::Display for Debug {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Amount {
-    pub number: f64,
+    pub number: Decimal,
     pub ccy: Ccy,
 }
 
@@ -47,7 +48,7 @@ impl fmt::Display for Amount {
 impl Amount {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let number: f64 = pairs.next().unwrap().as_str().parse().unwrap();
+        let number: Decimal = pairs.next().unwrap().as_str().parse().unwrap();
         let ccy = pairs.next().unwrap().as_str().to_string();
         Self { number, ccy }
     }
@@ -449,7 +450,7 @@ pub struct Posting {
 }
 
 impl Posting {
-    pub fn new(account: Account, number: f64, ccy: Ccy) -> Self {
+    pub fn new(account: Account, number: Decimal, ccy: Ccy) -> Self {
         let amount = Some(Amount { number, ccy });
         let debug = Default::default();
         Self {

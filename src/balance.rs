@@ -8,7 +8,7 @@ pub fn get_balances(directives: Vec<Directive>) -> AccBal {
             for p in tx.postings {
                 if let Some(amount) = p.amount {
                     let entry = bals.entry(p.account).or_default();
-                    *entry.entry(amount.ccy.clone()).or_insert(0.0) += amount.number;
+                    *entry.entry(amount.ccy.clone()).or_default() += amount.number;
                 }
             }
         }

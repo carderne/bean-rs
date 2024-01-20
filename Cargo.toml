@@ -11,6 +11,7 @@ chrono = "0.4.31"
 clap = { version = "4.4.18", features = ["derive"] }
 pest = "2.7.6"
 pest_derive = "2.7.6"
+rust_decimal = "1.33.1"
 
 [[bin]]
 name = "bean"

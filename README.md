@@ -11,7 +11,7 @@ Planned featuers:
 - [x] Stricter transaction keywords
 - [x] Propagate line numbers for debugging
 - [x] Calculate account balances
-- [ ] Use proper Decimal handling
+- [x] Use proper Decimal handling
 - [ ] Validate transactions against `open`/`close` directives
 - [ ] Validate `balance` directives
 - [ ] Open/close with multiple currencies
