@@ -19,3 +19,7 @@ fmt:
 .PHONY: test
 test:
 	cargo test
+
+.PHONY: lint
+lint:
+	cargo clippy

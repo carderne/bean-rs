@@ -42,11 +42,10 @@ fn balance_transaction(tx: &mut Transaction) {
     tx.postings = postings;
 }
 
-pub fn balance_transactions(directives: &mut Vec<Directive>) {
-    for d in directives {
-        match d {
-            Directive::Transaction(d) => balance_transaction(d),
-            _ => (),
+pub fn balance_transactions(directives: &mut [Directive]) {
+    for d in directives.iter_mut() {
+        if let Directive::Transaction(tx) = d {
+            balance_transaction(tx);
         }
     }
 }

@@ -75,12 +75,12 @@ impl fmt::Display for ConfigCustom {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct EOI {
+pub struct Eoi {
     date: String,
     debug: Debug,
 }
 
-impl EOI {
+impl Eoi {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
         let debug = Debug { line };
@@ -91,7 +91,7 @@ impl EOI {
     }
 }
 
-impl fmt::Display for EOI {
+impl fmt::Display for Eoi {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{debug}-- EOI", debug = self.debug)
     }
@@ -177,7 +177,7 @@ impl Commodity {
         let date = pairs.next().unwrap().as_str().to_string();
         let ccy = pairs.next().unwrap().as_str().to_string();
         let mut meta: Vec<Metadata> = Vec::new();
-        while let Some(pair) = pairs.next() {
+        for pair in pairs {
             if pair.as_rule() == Rule::metadata {
                 let p = Metadata::from_entry(pair);
                 meta.push(p)
@@ -455,7 +455,7 @@ impl Posting {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let account = pairs.next().unwrap().as_str().to_string();
-        let amount = if let Some(_) = pairs.peek() {
+        let amount = if pairs.peek().is_some() {
             Some(Amount::from_entry(pairs.next().unwrap()))
         } else {
             None
@@ -505,9 +505,9 @@ pub fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) 
     let first_val = pairs.next().unwrap().as_str().to_string();
     if pairs.peek().unwrap().as_rule() == Rule::narration {
         let narration = pairs.next().unwrap().as_str().to_string();
-        return (Some(first_val), narration);
+        (Some(first_val), narration)
     } else {
-        return (None, first_val);
+        (None, first_val)
     }
 }
 
@@ -519,7 +519,7 @@ impl Transaction {
         let (payee, narration) = get_payee_narration(&mut pairs);
         let mut postings: Vec<Posting> = Vec::new();
         let mut meta: Vec<Metadata> = Vec::new();
-        while let Some(pair) = pairs.next() {
+        for pair in pairs {
             if pair.as_rule() == Rule::posting {
                 postings.push(Posting::from_entry(pair));
             } else if pair.as_rule() == Rule::metadata {
@@ -576,7 +576,7 @@ impl fmt::Display for Transaction {
 }
 
 pub enum Directive {
-    EOI(EOI),
+    Eoi(Eoi),
     ConfigCustom(ConfigCustom),
     ConfigOption(ConfigOption),
     Commodity(Commodity),
@@ -592,7 +592,7 @@ pub enum Directive {
 impl Directive {
     pub fn date(&self) -> &str {
         match self {
-            Directive::EOI(d) => &d.date,
+            Directive::Eoi(d) => &d.date,
             Directive::ConfigCustom(d) => &d.date,
             Directive::ConfigOption(d) => &d.date,
             Directive::Commodity(d) => &d.date,
@@ -607,7 +607,7 @@ impl Directive {
     }
     pub fn order(&self) -> i8 {
         match self {
-            Directive::EOI(_) => 0,
+            Directive::Eoi(_) => 0,
             Directive::ConfigCustom(_) => 0,
             Directive::ConfigOption(_) => 0,
             Directive::Commodity(_) => 0,
@@ -625,7 +625,7 @@ impl Directive {
 impl fmt::Display for Directive {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Directive::EOI(d) => write!(f, "{d}"),
+            Directive::Eoi(d) => write!(f, "{d}"),
             Directive::ConfigCustom(d) => write!(f, "{d}"),
             Directive::ConfigOption(d) => write!(f, "{d}"),
             Directive::Commodity(d) => write!(f, "{d}"),

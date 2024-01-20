@@ -36,15 +36,15 @@ pub fn consume(entries: Pairs<'_, Rule>) -> Vec<Directive> {
                 Rule::transaction => {
                     Directive::Transaction(directives::Transaction::from_entry(entry))
                 }
-                Rule::EOI => Directive::EOI(directives::EOI::from_entry(entry)),
+                Rule::EOI => Directive::Eoi(directives::Eoi::from_entry(entry)),
                 _ => unreachable!("no rule for this entry!"),
             }
         })
         .collect()
 }
 
-pub fn sort(directives: &mut Vec<Directive>) {
-    directives.sort_by(|a, b| match a.date().cmp(&b.date()) {
+pub fn sort(directives: &mut [Directive]) {
+    directives.sort_by(|a, b| match a.date().cmp(b.date()) {
         Ordering::Equal => a.order().cmp(&b.order()),
         other => other,
     });
