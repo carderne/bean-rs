@@ -14,6 +14,7 @@ entry = _{
   | transaction
   | COMMENT
   | space+
+  | badline
 }
 
 heading = _{ "*" ~ anyline }
@@ -64,4 +65,5 @@ tag  = @{ "#" ~ ASCII_ALPHA_LOWER+ }
 link = @{ "^" ~ ASCII_ALPHA_LOWER+ }
 
 COMMENT = _{ NEWLINE? ~ space* ~ ";" ~ anyline }
+badline =  { (!NEWLINE ~ ANY)+ }
 anyline = _{ (!NEWLINE ~ ANY)* }

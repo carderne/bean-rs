@@ -6,7 +6,7 @@ Using [pest](https://pest.rs/) for parsing. Two useful links:
 - [pest bootstrap parsing](https://github.com/pest-parser/pest/tree/master/meta/src)
 - [playground](https://pest.rs/#editor)
 
-Planned featuers:
+Planned features:
 - [x] Parse beancount files
 - [x] Stricter transaction keywords
 - [x] Propagate line numbers for debugging

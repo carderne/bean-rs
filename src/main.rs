@@ -29,18 +29,25 @@ fn main() {
     }
 }
 
-fn load(text: String) -> Vec<directives::Directive> {
-    let entries = parser::parse(&text);
-    let mut directives = parser::consume(entries);
-    parser::sort(&mut directives);
-    book::balance_transactions(&mut directives);
-    utils::print_directives(&directives);
-    directives
+fn load(text: String) -> Result<Vec<directives::Directive>, parser::ParseError> {
+    let entries = parser::parse(&text)?;
+    let (dirs, bad) = parser::consume(entries);
+    if bad.len() > 0 {
+        utils::print_badlines(bad)
+    }
+    let mut dirs = dirs;
+    parser::sort(&mut dirs);
+    book::balance_transactions(&mut dirs);
+    utils::print_directives(&dirs);
+    Ok(dirs)
 }
 
 fn balance(path: &String) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
-    let directives = load(text);
+    let directives = load(text).unwrap_or_else(|e| {
+        println!("Error: something went wrong: {e}");
+        std::process::exit(1);
+    });
     let bals = balance::get_balances(directives);
     utils::print_bals(bals);
     // println!("{bals:?}");

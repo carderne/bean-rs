@@ -583,6 +583,23 @@ impl fmt::Display for Transaction {
     }
 }
 
+#[derive(Debug)]
+pub struct Badline {
+    line: usize,
+}
+
+impl Badline {
+    pub fn new(line: usize) -> Self {
+        Self { line }
+    }
+}
+
+impl fmt::Display for Badline {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Badline: L{line}", line=self.line)
+    }
+}
+
 pub enum Directive {
     Eoi(Eoi),
     ConfigCustom(ConfigCustom),
@@ -655,8 +672,8 @@ mod tests {
     #[test]
     fn test_open() {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
-        let entries = parser::parse(&text);
-        let dirs = parser::consume(entries);
+        let entries = parser::parse(&text).unwrap();
+        let (dirs, _) = parser::consume(entries);
         let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
         let a = &Open {
             date,
