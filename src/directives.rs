@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 
 use pest::iterators::{Pair, Pairs};
@@ -8,6 +9,9 @@ const BASE_DATE: &str = "0001-01-01";
 
 type Ccy = String;
 type Account = String;
+
+pub type CcyBal = HashMap<String, f64>;
+pub type AccBal = HashMap<String, CcyBal>;
 
 #[derive(Clone, Debug, Default)]
 pub struct Debug {

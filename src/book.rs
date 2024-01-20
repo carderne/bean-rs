@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::directives::{Directive, Posting, Transaction};
+use crate::directives::{CcyBal, Directive, Posting, Transaction};
 
 fn balance_transaction(tx: &mut Transaction) {
     eprintln!("balancing {tx:?}");
 
-    let mut ccy_bals: HashMap<String, f64> = HashMap::new();
+    let mut ccy_bals: CcyBal = HashMap::new();
     let mut postings: Vec<Posting> = Vec::new();
 
     let mut found_empty_posting = false;

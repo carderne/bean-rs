@@ -10,7 +10,7 @@ Planned featuers:
 - [x] Parse beancount files
 - [x] Stricter transaction keywords
 - [x] Propagate line numbers for debugging
-- [ ] Calculate account balances
+- [x] Calculate account balances
 - [ ] Use proper Decimal handling
 - [ ] Validate transactions against `open`/`close` directives
 - [ ] Validate `balance` directives

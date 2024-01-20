@@ -20,8 +20,12 @@ pub fn consume(entries: Pairs<'_, Rule>) -> Vec<Directive> {
         .map(|entry| {
             eprintln!("debug:\t{:?}\t{:?}", entry.as_rule(), entry.as_span(),);
             match entry.as_rule() {
-                Rule::option => Directive::ConfigOption(directives::ConfigOption::from_entry(entry)),
-                Rule::custom => Directive::ConfigCustom(directives::ConfigCustom::from_entry(entry)),
+                Rule::option => {
+                    Directive::ConfigOption(directives::ConfigOption::from_entry(entry))
+                }
+                Rule::custom => {
+                    Directive::ConfigCustom(directives::ConfigCustom::from_entry(entry))
+                }
                 Rule::commodity => Directive::Commodity(directives::Commodity::from_entry(entry)),
                 Rule::open => Directive::Open(directives::Open::from_entry(entry)),
                 Rule::close => Directive::Close(directives::Close::from_entry(entry)),
@@ -29,7 +33,9 @@ pub fn consume(entries: Pairs<'_, Rule>) -> Vec<Directive> {
                 Rule::pad => Directive::Pad(directives::Pad::from_entry(entry)),
                 Rule::price => Directive::Price(directives::Price::from_entry(entry)),
                 Rule::document => Directive::Document(directives::Document::from_entry(entry)),
-                Rule::transaction => Directive::Transaction(directives::Transaction::from_entry(entry)),
+                Rule::transaction => {
+                    Directive::Transaction(directives::Transaction::from_entry(entry))
+                }
                 Rule::EOI => Directive::EOI(directives::EOI::from_entry(entry)),
                 _ => unreachable!("no rule for this entry!"),
             }

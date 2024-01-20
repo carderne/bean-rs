@@ -1,3 +1,4 @@
+mod balance;
 mod book;
 mod directives;
 mod grammar;
@@ -33,11 +34,14 @@ fn load(text: String) -> Vec<directives::Directive> {
     let mut directives = parser::consume(entries);
     parser::sort(&mut directives);
     book::balance_transactions(&mut directives);
+    utils::print_directives(&directives);
     directives
 }
 
 fn balance(path: &String) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
     let directives = load(text);
-    utils::print_directives(&directives);
+    let bals = balance::get_balances(directives);
+    utils::print_bals(bals);
+    // println!("{bals:?}");
 }
