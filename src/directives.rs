@@ -1,3 +1,6 @@
+/// Only those types in the enum Directives are direct members of the Ledger.
+/// The rest are children of other elements.
+
 use std::collections::HashMap;
 use std::fmt;
 
@@ -16,9 +19,26 @@ type Account = String;
 pub type CcyBal = HashMap<String, Decimal>;
 pub type AccBal = HashMap<String, CcyBal>;
 
+#[derive(Debug)]
+pub struct Badline {
+    line: usize,
+}
+
+impl Badline {
+    pub fn new(line: usize) -> Self {
+        Self { line }
+    }
+}
+
+impl fmt::Display for Badline {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Badline: L{line}", line=self.line)
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Debug {
-    line: usize,
+    pub line: usize,
 }
 
 impl PartialEq for Debug {
@@ -72,27 +92,6 @@ impl ConfigCustom {
 impl fmt::Display for ConfigCustom {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{debug}-- ignore custom", debug = self.debug)
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Eoi {
-    date: NaiveDate,
-    debug: Debug,
-}
-
-impl Eoi {
-    pub fn from_entry(entry: Pair<Rule>) -> Self {
-        let (line, _) = entry.line_col();
-        let debug = Debug { line };
-        let date = NaiveDate::parse_from_str(BASE_DATE, DATE_FMT).unwrap();
-        Self { date, debug }
-    }
-}
-
-impl fmt::Display for Eoi {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{debug}-- EOI", debug = self.debug)
     }
 }
 
@@ -505,7 +504,7 @@ pub struct Transaction {
     narration: String,
     pub postings: Vec<Posting>,
     meta: Vec<Metadata>,
-    debug: Debug,
+    pub debug: Debug,
 }
 
 fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) {
@@ -583,25 +582,9 @@ impl fmt::Display for Transaction {
     }
 }
 
-#[derive(Debug)]
-pub struct Badline {
-    line: usize,
-}
-
-impl Badline {
-    pub fn new(line: usize) -> Self {
-        Self { line }
-    }
-}
-
-impl fmt::Display for Badline {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Badline: L{line}", line=self.line)
-    }
-}
-
+/// The "ledger" is made up of Directives
+/// Most operations will be done by looping through a Vec of these
 pub enum Directive {
-    Eoi(Eoi),
     ConfigCustom(ConfigCustom),
     ConfigOption(ConfigOption),
     Commodity(Commodity),
@@ -617,7 +600,6 @@ pub enum Directive {
 impl Directive {
     pub fn date(&self) -> &NaiveDate {
         match self {
-            Directive::Eoi(d) => &d.date,
             Directive::ConfigCustom(d) => &d.date,
             Directive::ConfigOption(d) => &d.date,
             Directive::Commodity(d) => &d.date,
@@ -632,7 +614,6 @@ impl Directive {
     }
     pub fn order(&self) -> i8 {
         match self {
-            Directive::Eoi(_) => 0,
             Directive::ConfigCustom(_) => 0,
             Directive::ConfigOption(_) => 0,
             Directive::Commodity(_) => 0,
@@ -650,7 +631,6 @@ impl Directive {
 impl fmt::Display for Directive {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Directive::Eoi(d) => write!(f, "{d}"),
             Directive::ConfigCustom(d) => write!(f, "{d}"),
             Directive::ConfigOption(d) => write!(f, "{d}"),
             Directive::Commodity(d) => write!(f, "{d}"),
@@ -685,7 +665,7 @@ mod tests {
             Directive::Open(i) => {
                 assert!(i == a);
             }
-            _ => panic!("Found wrong directive type"),
+            _ => assert!(false, "Found wrong directive type"),
         }
     }
 }

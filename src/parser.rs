@@ -13,10 +13,12 @@ use crate::utils;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ParseErrorType {
-    Parse,
-    Into,
+    Parse, // parse error from Pest
+    Into,  // error while going into `root` pair
 }
 
+/// Could possibly just use Pest's `Error`
+/// but this seems a bit nicer
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct ParseError {
     ty: ParseErrorType,
@@ -36,6 +38,7 @@ impl fmt::Display for ParseError {
     }
 }
 
+/// Parse the text using Pest
 pub fn parse(data: &str) -> Result<Pairs<'_, Rule>, ParseError> {
     let mut entries = match BeanParser::parse(Rule::root, data) {
         Ok(pairs) => Ok(pairs),
@@ -61,6 +64,7 @@ pub fn parse(data: &str) -> Result<Pairs<'_, Rule>, ParseError> {
     }
 }
 
+// Convert the AST Pest Pairs into a Vec of Directives
 pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<Badline>) {
     let mut bad: Vec<Badline> = Vec::with_capacity(entries.len());
     let mut dirs: Vec<Directive> = Vec::new();
@@ -106,7 +110,7 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<Badline>) {
                 )));
             }
             Rule::EOI => {
-                dirs.push(Directive::Eoi(directives::Eoi::from_entry(entry)));
+                debug!("Hit EOI");
             }
             Rule::badline => {
                 let (line, _) = entry.line_col();
@@ -118,6 +122,7 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<Badline>) {
     (dirs, bad)
 }
 
+/// Sort the Directives by date and `order` inplace
 pub fn sort(directives: &mut [Directive]) {
     directives.sort_by(|a, b| match a.date().cmp(b.date()) {
         Ordering::Equal => a.order().cmp(&b.order()),
@@ -136,7 +141,7 @@ mod tests {
         let got = &dirs[0];
         match got {
             Directive::Open(_) => (),
-            _ => panic!("Found wrong directive type"),
+            _ => assert!(false, "Found wrong directive type"),
         }
     }
 

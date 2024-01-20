@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use bean_rs::{balance};
+use bean_rs::balance;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

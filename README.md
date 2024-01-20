@@ -24,7 +24,7 @@ cargo install bean-rs
 
 ### Run
 ```
-$ bean
+$ bean-rs
 
 Commands:
   balance

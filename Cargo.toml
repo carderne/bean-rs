@@ -3,7 +3,7 @@ name = "bean-rs"
 license = "MIT"
 authors = ["Chris Arderne <chris@rdrn.me"]
 description = "beancount clone in Rust"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
@@ -16,5 +16,5 @@ pest_derive = "2.7.6"
 rust_decimal = "1.33.1"
 
 [[bin]]
-name = "bean"
+name = "bean-rs"
 path = "src/main.rs"
