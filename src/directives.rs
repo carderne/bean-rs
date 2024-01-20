@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use chrono::NaiveDate;
 use pest::iterators::{Pair, Pairs};
 
 use crate::grammar::Rule;
 
 const BASE_DATE: &str = "0001-01-01";
+const DATE_FMT: &str = "%Y-%m-%d";
 
 type Ccy = String;
 type Account = String;
@@ -53,7 +55,7 @@ impl Amount {
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigCustom {
-    date: String,
+    date: NaiveDate,
     debug: Debug,
 }
 
@@ -61,10 +63,8 @@ impl ConfigCustom {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
         let debug = Debug { line };
-        Self {
-            date: String::from(BASE_DATE),
-            debug,
-        }
+        let date = NaiveDate::parse_from_str(BASE_DATE, DATE_FMT).unwrap();
+        Self { date, debug }
     }
 }
 
@@ -76,7 +76,7 @@ impl fmt::Display for ConfigCustom {
 
 #[derive(Debug, PartialEq)]
 pub struct Eoi {
-    date: String,
+    date: NaiveDate,
     debug: Debug,
 }
 
@@ -84,10 +84,8 @@ impl Eoi {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
         let debug = Debug { line };
-        Self {
-            date: String::from(BASE_DATE),
-            debug,
-        }
+        let date = NaiveDate::parse_from_str(BASE_DATE, DATE_FMT).unwrap();
+        Self { date, debug }
     }
 }
 
@@ -99,7 +97,7 @@ impl fmt::Display for Eoi {
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigOption {
-    date: String,
+    date: NaiveDate,
     key: String,
     val: String,
     debug: Debug,
@@ -112,8 +110,9 @@ impl ConfigOption {
         let val = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
         let debug = Debug { line };
+        let date = NaiveDate::parse_from_str(BASE_DATE, DATE_FMT).unwrap();
         Self {
-            date: String::from(BASE_DATE),
+            date,
             key,
             val,
             debug,
@@ -165,7 +164,7 @@ impl fmt::Display for Metadata {
 
 #[derive(Debug, PartialEq)]
 pub struct Commodity {
-    date: String,
+    date: NaiveDate,
     ccy: String,
     meta: Vec<Metadata>,
     debug: Debug,
@@ -174,7 +173,8 @@ pub struct Commodity {
 impl Commodity {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let ccy = pairs.next().unwrap().as_str().to_string();
         let mut meta: Vec<Metadata> = Vec::new();
         for pair in pairs {
@@ -215,7 +215,7 @@ impl fmt::Display for Commodity {
 
 #[derive(Debug, PartialEq)]
 pub struct Open {
-    date: String,
+    date: NaiveDate,
     account: Account,
     debug: Debug,
 }
@@ -223,7 +223,8 @@ pub struct Open {
 impl Open {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let account = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
         let debug = Debug { line };
@@ -249,7 +250,7 @@ impl fmt::Display for Open {
 
 #[derive(Debug, PartialEq)]
 pub struct Close {
-    date: String,
+    date: NaiveDate,
     account: Account,
     debug: Debug,
 }
@@ -257,7 +258,8 @@ pub struct Close {
 impl Close {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let account = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
         let debug = Debug { line };
@@ -283,7 +285,7 @@ impl fmt::Display for Close {
 
 #[derive(Debug, PartialEq)]
 pub struct Balance {
-    date: String,
+    date: NaiveDate,
     account: Account,
     amount: Amount,
     debug: Debug,
@@ -292,7 +294,8 @@ pub struct Balance {
 impl Balance {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let account = pairs.next().unwrap().as_str().to_string();
         let amount_entry = pairs.next().unwrap();
         let amount = Amount::from_entry(amount_entry);
@@ -322,7 +325,7 @@ impl fmt::Display for Balance {
 
 #[derive(Debug, PartialEq)]
 pub struct Pad {
-    date: String,
+    date: NaiveDate,
     account_to: Account,
     account_from: Account,
     debug: Debug,
@@ -331,7 +334,8 @@ pub struct Pad {
 impl Pad {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let account_to = pairs.next().unwrap().as_str().to_string();
         let account_from = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
@@ -360,7 +364,7 @@ impl fmt::Display for Pad {
 
 #[derive(Debug, PartialEq)]
 pub struct Price {
-    date: String,
+    date: NaiveDate,
     commodity: String,
     amount: Amount,
     debug: Debug,
@@ -369,7 +373,8 @@ pub struct Price {
 impl Price {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let commodity = pairs.next().unwrap().as_str().to_string();
         let amount_entry = pairs.next().unwrap();
         let amount = Amount::from_entry(amount_entry);
@@ -399,7 +404,7 @@ impl fmt::Display for Price {
 
 #[derive(Debug, PartialEq)]
 pub struct Document {
-    date: String,
+    date: NaiveDate,
     account: Account,
     path: String,
     debug: Debug,
@@ -408,7 +413,8 @@ pub struct Document {
 impl Document {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let account = pairs.next().unwrap().as_str().to_string();
         let path = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
@@ -492,7 +498,7 @@ impl fmt::Display for Posting {
 
 #[derive(Debug, PartialEq)]
 pub struct Transaction {
-    date: String,
+    date: NaiveDate,
     ty: String,
     payee: Option<String>,
     narration: String,
@@ -501,7 +507,7 @@ pub struct Transaction {
     debug: Debug,
 }
 
-pub fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) {
+fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) {
     let first_val = pairs.next().unwrap().as_str().to_string();
     if pairs.peek().unwrap().as_rule() == Rule::narration {
         let narration = pairs.next().unwrap().as_str().to_string();
@@ -514,7 +520,8 @@ pub fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) 
 impl Transaction {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let date = pairs.next().unwrap().as_str().to_string();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let ty = pairs.next().unwrap().as_str().to_string();
         let (payee, narration) = get_payee_narration(&mut pairs);
         let mut postings: Vec<Posting> = Vec::new();
@@ -590,7 +597,7 @@ pub enum Directive {
 }
 
 impl Directive {
-    pub fn date(&self) -> &str {
+    pub fn date(&self) -> &NaiveDate {
         match self {
             Directive::Eoi(d) => &d.date,
             Directive::ConfigCustom(d) => &d.date,
@@ -649,8 +656,9 @@ mod tests {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
         let entries = parser::parse(&text);
         let dirs = parser::consume(entries);
+        let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
         let a = &Open {
-            date: String::from("2023-01-01"),
+            date,
             account: String::from("Assets:Bank"),
             debug: Debug { line: 2 },
         };
