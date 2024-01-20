@@ -9,7 +9,7 @@ const BASE_DATE: &str = "0001-01-01";
 type Ccy = String;
 type Account = String;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Debug {
     line: usize,
 }
@@ -26,7 +26,7 @@ impl fmt::Display for Debug {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Amount {
     pub number: f64,
     pub ccy: Ccy,
@@ -39,7 +39,7 @@ impl fmt::Display for Amount {
 }
 
 impl Amount {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let number: f64 = pairs.next().unwrap().as_str().parse().unwrap();
         let ccy = pairs.next().unwrap().as_str().to_string();
@@ -54,7 +54,7 @@ pub struct ConfigCustom {
 }
 
 impl ConfigCustom {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
         let debug = Debug { line };
         Self {
@@ -77,7 +77,7 @@ pub struct EOI {
 }
 
 impl EOI {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
         let debug = Debug { line };
         Self {
@@ -102,7 +102,7 @@ pub struct ConfigOption {
 }
 
 impl ConfigOption {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let key = pairs.next().unwrap().as_str().to_string();
         let val = pairs.next().unwrap().as_str().to_string();
@@ -137,7 +137,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let key = pairs.next().unwrap().as_str().to_string();
         let val = pairs.next().unwrap().as_str().to_string();
@@ -168,14 +168,14 @@ pub struct Commodity {
 }
 
 impl Commodity {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let ccy = pairs.next().unwrap().as_str().to_string();
         let mut meta: Vec<Metadata> = Vec::new();
         while let Some(pair) = pairs.next() {
             if pair.as_rule() == Rule::metadata {
-                let p = Metadata::new(pair);
+                let p = Metadata::from_entry(pair);
                 meta.push(p)
             }
         }
@@ -217,7 +217,7 @@ pub struct Open {
 }
 
 impl Open {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let account = pairs.next().unwrap().as_str().to_string();
@@ -251,7 +251,7 @@ pub struct Close {
 }
 
 impl Close {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let account = pairs.next().unwrap().as_str().to_string();
@@ -286,12 +286,12 @@ pub struct Balance {
 }
 
 impl Balance {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let account = pairs.next().unwrap().as_str().to_string();
         let amount_entry = pairs.next().unwrap();
-        let amount = Amount::new(amount_entry);
+        let amount = Amount::from_entry(amount_entry);
         let (line, _) = entry.line_col();
         let debug = Debug { line };
         Self {
@@ -325,7 +325,7 @@ pub struct Pad {
 }
 
 impl Pad {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let account_to = pairs.next().unwrap().as_str().to_string();
@@ -363,12 +363,12 @@ pub struct Price {
 }
 
 impl Price {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let commodity = pairs.next().unwrap().as_str().to_string();
         let amount_entry = pairs.next().unwrap();
-        let amount = Amount::new(amount_entry);
+        let amount = Amount::from_entry(amount_entry);
         let (line, _) = entry.line_col();
         let debug = Debug { line };
         Self {
@@ -402,7 +402,7 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let account = pairs.next().unwrap().as_str().to_string();
@@ -431,24 +431,33 @@ impl fmt::Display for Document {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Posting {
-    account: Account,
-    amount: Option<Amount>,
-    debug: Debug,
+    pub account: Account,
+    pub amount: Option<Amount>,
+    debug: Option<Debug>,
 }
 
 impl Posting {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn new(account: Account, number: f64, ccy: Ccy) -> Self {
+        let amount = Some(Amount { number, ccy });
+        let debug = Default::default();
+        Self {
+            account,
+            amount,
+            debug,
+        }
+    }
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let account = pairs.next().unwrap().as_str().to_string();
         let amount = if let Some(_) = pairs.peek() {
-            Some(Amount::new(pairs.next().unwrap()))
+            Some(Amount::from_entry(pairs.next().unwrap()))
         } else {
             None
         };
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = Some(Debug { line });
         Self {
             account,
             amount,
@@ -464,10 +473,13 @@ impl fmt::Display for Posting {
             None => String::from(""),
         };
 
+        let debug: Debug = Debug::default();
+        let debug = self.debug.as_ref().unwrap_or(&debug);
+
         write!(
             f,
             "{debug}  {account} {amount}",
-            debug = self.debug,
+            debug = debug,
             account = self.account,
             amount = amount_str,
         )
@@ -480,7 +492,7 @@ pub struct Transaction {
     ty: String,
     payee: Option<String>,
     narration: String,
-    postings: Vec<Posting>,
+    pub postings: Vec<Posting>,
     meta: Vec<Metadata>,
     debug: Debug,
 }
@@ -496,7 +508,7 @@ pub fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) 
 }
 
 impl Transaction {
-    pub fn new(entry: Pair<Rule>) -> Self {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let date = pairs.next().unwrap().as_str().to_string();
         let ty = pairs.next().unwrap().as_str().to_string();
@@ -505,9 +517,9 @@ impl Transaction {
         let mut meta: Vec<Metadata> = Vec::new();
         while let Some(pair) = pairs.next() {
             if pair.as_rule() == Rule::posting {
-                postings.push(Posting::new(pair));
+                postings.push(Posting::from_entry(pair));
             } else if pair.as_rule() == Rule::metadata {
-                meta.push(Metadata::new(pair));
+                meta.push(Metadata::from_entry(pair));
             }
         }
         let (line, _) = entry.line_col();

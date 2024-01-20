@@ -1,11 +1,10 @@
+mod book;
 mod directives;
 mod grammar;
 mod parser;
 mod utils;
 
 use clap::{Parser, Subcommand};
-
-use crate::utils::print_directives;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -29,10 +28,16 @@ fn main() {
     }
 }
 
-fn balance(path: &String) {
-    let text = std::fs::read_to_string(path).expect("cannot read file");
+fn load(text: String) -> Vec<directives::Directive> {
     let entries = parser::parse(&text);
     let mut directives = parser::consume(entries);
     parser::sort(&mut directives);
-    print_directives(directives);
+    book::balance_transactions(&mut directives);
+    directives
+}
+
+fn balance(path: &String) {
+    let text = std::fs::read_to_string(path).expect("cannot read file");
+    let directives = load(text);
+    utils::print_directives(&directives);
 }
