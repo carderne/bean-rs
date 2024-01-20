@@ -1,6 +1,7 @@
 use crate::directives::{AccBal, Directive};
 use std::collections::HashMap;
 
+/// Get balances for all accounts in all currencies
 pub fn get_balances(directives: Vec<Directive>) -> AccBal {
     let mut bals: AccBal = HashMap::new();
     for d in directives {

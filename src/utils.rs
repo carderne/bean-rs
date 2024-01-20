@@ -1,8 +1,15 @@
 use log::debug;
 use pest::iterators::Pair;
 
-use crate::{grammar::Rule, directives::Badline};
-use crate::directives::{AccBal, Directive};
+use crate::grammar::Rule;
+use crate::directives::{AccBal, Badline, Directive};
+use crate::book::BookError;
+
+pub fn print_book_errors(errors: &Vec<BookError>) {
+    for e in errors {
+        println!("{e:?}");
+    }
+}
 
 pub fn print_directives(directives: &Vec<Directive>) {
     for d in directives {
