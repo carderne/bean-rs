@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 
+use log::debug;
 use pest::error::LineColLocation;
 use pest::iterators::Pairs;
 use pest::Parser;
@@ -64,7 +65,7 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<Badline>) {
     let mut bad: Vec<Badline> = Vec::with_capacity(entries.len());
     let mut dirs: Vec<Directive> = Vec::new();
     for entry in entries {
-        eprintln!("debug:\t{:?}\t{:?}", entry.as_rule(), entry.as_span(),);
+        debug!("{:?}\t{:?}", entry.as_rule(), entry.as_span(),);
         match entry.as_rule() {
             Rule::option => {
                 dirs.push(Directive::ConfigOption(

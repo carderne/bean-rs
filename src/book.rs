@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
+use log::debug;
+
 use crate::directives::{CcyBal, Directive, Posting, Transaction};
 
 fn balance_transaction(tx: &mut Transaction) {
-    eprintln!("balancing {tx:?}");
+    debug!("balancing {tx:?}");
 
     let mut ccy_bals: CcyBal = HashMap::new();
     let mut postings: Vec<Posting> = Vec::new();

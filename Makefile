@@ -10,7 +10,7 @@ release: fmt
 
 .PHONY: run
 run:
-	cargo run balance example.bean
+	RUST_LOG=debug cargo run balance example.bean
 
 .PHONY: fmt
 fmt:

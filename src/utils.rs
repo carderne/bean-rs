@@ -1,11 +1,12 @@
-use crate::{grammar::Rule, directives::Badline};
+use log::debug;
 use pest::iterators::Pair;
 
+use crate::{grammar::Rule, directives::Badline};
 use crate::directives::{AccBal, Directive};
 
 pub fn print_directives(directives: &Vec<Directive>) {
     for d in directives {
-        println!("{d}")
+        debug!("{d}")
     }
 }
 
@@ -20,13 +21,13 @@ pub fn print_bals(bals: AccBal) {
 
 pub fn print_badlines(bad: Vec<Badline>) {
     for b in bad {
-        println!("{b}");
+        eprintln!("{b}");
     }
 }
 
 pub fn print_pair(pair: &Pair<Rule>, depth: usize) {
     if depth == 0 {
-        println!(" -- Debug full parse output");
+        debug!("full parse output");
     }
 
     let indent = "  ".repeat(depth);
@@ -34,17 +35,16 @@ pub fn print_pair(pair: &Pair<Rule>, depth: usize) {
 
     if inner_pairs.is_empty() {
         // It's a leaf node
-        println!("{}{:?}: {}", indent, pair.as_rule(), pair.as_str());
+        debug!("{}{:?}: {}", indent, pair.as_rule(), pair.as_str());
     } else {
         // Not a leaf node, just print the rule
-        println!("{}{:?}:", indent, pair.as_rule());
-        // Recursively print inner pairs
+        debug!("{}{:?}:", indent, pair.as_rule());
         for inner_pair in inner_pairs {
             print_pair(&inner_pair, depth + 1);
         }
     }
     if depth == 0 {
-        println!(" -- END Debug full parse output");
+        debug!("END full parse output");
     }
 }
 

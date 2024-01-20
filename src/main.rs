@@ -21,6 +21,7 @@ enum Commands {
 }
 
 fn main() {
+    env_logger::init();
     let cli = Cli::parse();
     match &cli.command {
         Commands::Balance { path } => {
@@ -32,7 +33,7 @@ fn main() {
 fn load(text: String) -> Result<Vec<directives::Directive>, parser::ParseError> {
     let entries = parser::parse(&text)?;
     let (dirs, bad) = parser::consume(entries);
-    if bad.len() > 0 {
+    if !bad.is_empty() {
         utils::print_badlines(bad)
     }
     let mut dirs = dirs;
@@ -45,10 +46,9 @@ fn load(text: String) -> Result<Vec<directives::Directive>, parser::ParseError> 
 fn balance(path: &String) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
     let directives = load(text).unwrap_or_else(|e| {
-        println!("Error: something went wrong: {e}");
+        eprintln!("Error: something went wrong: {e}");
         std::process::exit(1);
     });
     let bals = balance::get_balances(directives);
     utils::print_bals(bals);
-    // println!("{bals:?}");
 }
