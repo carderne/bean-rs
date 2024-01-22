@@ -3,7 +3,7 @@ name = "bean-rs"
 license = "MIT"
 authors = ["Chris Arderne <chris@rdrn.me"]
 description = "beancount clone in Rust"
-version = "0.1.2"
+version = "0.0.0-git"  # set by Github Actions CICD
 edition = "2021"
 
 [dependencies]
