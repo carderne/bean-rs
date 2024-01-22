@@ -36,11 +36,19 @@ impl fmt::Display for Debug {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Amount {
     pub number: Decimal,
     pub ccy: Ccy,
 }
+
+impl PartialEq for Amount {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO get precision from context
+        self.ccy == other.ccy && (self.number - other.number).abs() > Decimal::new(1, 3)
+    }
+}
+impl Eq for Amount {}
 
 impl fmt::Display for Amount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -266,12 +274,12 @@ impl fmt::Display for Close {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Balance {
     date: NaiveDate,
-    account: Account,
-    amount: Amount,
-    debug: Debug,
+    pub account: Account,
+    pub amount: Amount,
+    pub debug: Debug,
 }
 
 impl Balance {

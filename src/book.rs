@@ -86,7 +86,7 @@ fn check_transaction(tx: &Transaction) -> Vec<BeanError> {
                 ErrorType::UnbalancedTransaction,
                 "",
                 tx.debug.line,
-                &format!("Transaction unbalanced for currency: {ccy}", ccy=&ccy),
+                &format!("Transaction unbalanced for currency: {ccy}", ccy = &ccy),
                 Some(Directive::Transaction(tx.clone())),
             );
             errs.push(err);
@@ -121,6 +121,22 @@ pub fn get_balances(directives: Vec<Directive>) -> (AccBal, Vec<BeanError>) {
             Directive::Close(close) => {
                 accs.insert(close.account, false);
             }
+            Directive::Balance(bal) => {
+                let def = &Decimal::default();
+                let entry = bals.entry(bal.account.clone()).or_default();
+                let accum_bal = entry.get(&bal.amount.ccy).unwrap_or(def);
+                let assert_bal = bal.amount.number;
+                if (assert_bal - *accum_bal) > Decimal::new(1, 3) {
+                    let err = BeanError::new(
+                        ErrorType::BalanceAssertion,
+                        "",
+                        bal.debug.line,
+                        &format!("Balance assertion failed: asserted {assert_bal} is not equal to {accum_bal}"),
+                        Some(Directive::Balance(bal.clone())),
+                    );
+                    errs.push(err);
+                }
+            }
             Directive::Transaction(tx) => {
                 for p in &tx.postings {
                     if let Some(amount) = &p.amount {
@@ -131,23 +147,31 @@ pub fn get_balances(directives: Vec<Directive>) -> (AccBal, Vec<BeanError>) {
                                     let entry = bals.entry(p.account.clone()).or_default();
                                     *entry.entry(amount.ccy.clone()).or_default() += amount.number;
                                 } else {
-                                    errs.push(BeanError::new(
+                                    let err = BeanError::new(
                                         ErrorType::ClosedAccount,
                                         "",
                                         tx.debug.line,
-                                        &format!("Transaction referred to closed Account: {account}", account=&p.account),
+                                        &format!(
+                                            "Transaction referred to closed Account: {account}",
+                                            account = &p.account
+                                        ),
                                         Some(Directive::Transaction(tx.clone())),
-                                    ));
+                                    );
+                                    errs.push(err);
                                 }
                             }
                             None => {
-                                errs.push(BeanError::new(
+                                let err = BeanError::new(
                                     ErrorType::NoAccount,
                                     "",
                                     tx.debug.line,
-                                    &format!("Transaction referred to non-existent Account: {account}", account=&p.account),
+                                    &format!(
+                                        "Transaction referred to non-existent Account: {account}",
+                                        account = &p.account
+                                    ),
                                     Some(Directive::Transaction(tx.clone())),
-                                ));
+                                );
+                                errs.push(err);
                             }
                         }
                     }

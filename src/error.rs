@@ -13,6 +13,7 @@ pub enum ErrorType {
     UnbalancedTransaction,
     NoAccount,
     ClosedAccount,
+    BalanceAssertion,
 }
 
 #[allow(dead_code)]

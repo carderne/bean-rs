@@ -13,7 +13,7 @@ Planned features:
 - [x] Calculate account balances
 - [x] Use proper Decimal handling
 - [x] Validate transactions against `open`/`close` directives
-- [ ] Validate `balance` directives
+- [x] Validate `balance` directives
 - [ ] Open/close with multiple currencies
 
 ## Usage
