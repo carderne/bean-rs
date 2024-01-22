@@ -13,7 +13,7 @@ const BASE_DATE: &str = "0001-01-01";
 const DATE_FMT: &str = "%Y-%m-%d";
 
 type Ccy = String;
-type Account = String;
+pub type Account = String;
 
 pub type CcyBal = HashMap<Ccy, Decimal>;
 pub type AccBal = HashMap<Account, CcyBal>;
@@ -57,6 +57,9 @@ impl fmt::Display for Amount {
 }
 
 impl Amount {
+    pub fn new(number: Decimal, ccy: Ccy) -> Self {
+        Self { number, ccy }
+    }
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let number: Decimal = pairs.next().unwrap().as_str().parse().unwrap();
@@ -314,12 +317,12 @@ impl fmt::Display for Balance {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pad {
     date: NaiveDate,
-    account_to: Account,
+    pub account_to: Account,
     account_from: Account,
-    debug: Debug,
+    pub debug: Debug,
 }
 
 impl Pad {
@@ -534,6 +537,39 @@ impl Transaction {
             postings,
             meta,
             debug,
+        }
+    }
+    pub fn from_pad(pad: Pad, amount: Amount) -> Self {
+        let date = pad.date;
+        let ty = String::from("pad");
+        let payee = None;
+        let narration = String::new();
+        let debug: Debug = Debug::default();
+        let amount2 = Some(Amount {
+            number: -amount.clone().number,
+            ccy: amount.clone().ccy,
+        });
+        let amount = Some(amount);
+        let p1 = Posting {
+            account: pad.account_to,
+            amount: amount.clone(),
+            debug: Some(debug.clone()),
+        };
+        let p2 = Posting {
+            account: pad.account_from,
+            amount: amount2,
+            debug: Some(debug.clone()),
+        };
+        let postings = vec![p1, p2];
+        let meta: Vec<Metadata> = Vec::new();
+        Self {
+            date,
+            ty,
+            payee,
+            narration,
+            postings,
+            meta,
+            debug: debug.clone(),
         }
     }
 }

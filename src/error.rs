@@ -14,6 +14,7 @@ pub enum ErrorType {
     NoAccount,
     ClosedAccount,
     BalanceAssertion,
+    UnusedPad,
 }
 
 #[allow(dead_code)]
