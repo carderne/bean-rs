@@ -14,6 +14,7 @@ Planned features:
 - [x] Use proper Decimal handling
 - [x] Validate transactions against `open`/`close` directives
 - [x] Validate `balance` directives
+- [x] Pad statements
 - [ ] Open/close with multiple currencies
 
 ## Usage

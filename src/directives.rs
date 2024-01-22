@@ -13,26 +13,32 @@ const BASE_DATE: &str = "0001-01-01";
 const DATE_FMT: &str = "%Y-%m-%d";
 
 type Ccy = String;
-type Account = String;
+pub type Account = String;
 
 pub type CcyBal = HashMap<Ccy, Decimal>;
 pub type AccBal = HashMap<Account, CcyBal>;
 pub type AccStatuses = HashMap<Account, bool>;
 
 #[derive(Clone, Debug, Default)]
-pub struct Debug {
+pub struct DebugLine {
     pub line: usize,
 }
 
-impl PartialEq for Debug {
+impl DebugLine {
+    pub fn new(line: usize) -> Self {
+        Self { line }
+    }
+}
+
+impl PartialEq for DebugLine {
     fn eq(&self, _: &Self) -> bool {
         true
     }
 }
 
-impl fmt::Display for Debug {
+impl fmt::Display for DebugLine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        write!(f, "line:{line}", line = self.line)
     }
 }
 
@@ -57,6 +63,9 @@ impl fmt::Display for Amount {
 }
 
 impl Amount {
+    pub fn new(number: Decimal, ccy: Ccy) -> Self {
+        Self { number, ccy }
+    }
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
         let number: Decimal = pairs.next().unwrap().as_str().parse().unwrap();
@@ -68,13 +77,13 @@ impl Amount {
 #[derive(Debug, PartialEq)]
 pub struct ConfigCustom {
     date: NaiveDate,
-    debug: Debug,
+    debug: DebugLine,
 }
 
 impl ConfigCustom {
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         let date = NaiveDate::parse_from_str(BASE_DATE, DATE_FMT).unwrap();
         Self { date, debug }
     }
@@ -82,7 +91,7 @@ impl ConfigCustom {
 
 impl fmt::Display for ConfigCustom {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{debug}-- ignore custom", debug = self.debug)
+        write!(f, "-- ignore custom")
     }
 }
 
@@ -91,7 +100,7 @@ pub struct ConfigOption {
     date: NaiveDate,
     key: String,
     val: String,
-    debug: Debug,
+    debug: DebugLine,
 }
 
 impl ConfigOption {
@@ -100,7 +109,7 @@ impl ConfigOption {
         let key = pairs.next().unwrap().as_str().to_string();
         let val = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         let date = NaiveDate::parse_from_str(BASE_DATE, DATE_FMT).unwrap();
         Self {
             date,
@@ -113,13 +122,7 @@ impl ConfigOption {
 
 impl fmt::Display for ConfigOption {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{debug}{key} {val}",
-            debug = self.debug,
-            key = self.key,
-            val = self.val,
-        )
+        write!(f, "{key} {val}", key = self.key, val = self.val,)
     }
 }
 
@@ -127,7 +130,7 @@ impl fmt::Display for ConfigOption {
 pub struct Metadata {
     key: String,
     val: String,
-    debug: Debug,
+    debug: DebugLine,
 }
 
 impl Metadata {
@@ -136,20 +139,14 @@ impl Metadata {
         let key = pairs.next().unwrap().as_str().to_string();
         let val = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self { key, val, debug }
     }
 }
 
 impl fmt::Display for Metadata {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{debug}  {key}:{val}",
-            debug = self.debug,
-            key = self.key,
-            val = self.val,
-        )
+        write!(f, "  {key}:{val}", key = self.key, val = self.val,)
     }
 }
 
@@ -158,7 +155,7 @@ pub struct Commodity {
     date: NaiveDate,
     ccy: String,
     meta: Vec<Metadata>,
-    debug: Debug,
+    debug: DebugLine,
 }
 
 impl Commodity {
@@ -175,7 +172,7 @@ impl Commodity {
             }
         }
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             ccy,
@@ -195,8 +192,7 @@ impl fmt::Display for Commodity {
         }
         write!(
             f,
-            "{debug}{date} commodity {ccy}{meta}",
-            debug = self.debug,
+            "{date} commodity {ccy}{meta}",
             date = self.date,
             ccy = self.ccy,
             meta = meta_string,
@@ -204,11 +200,11 @@ impl fmt::Display for Commodity {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Open {
     date: NaiveDate,
     pub account: Account,
-    debug: Debug,
+    pub debug: DebugLine,
 }
 
 impl Open {
@@ -218,7 +214,7 @@ impl Open {
         let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let account = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             account,
@@ -231,19 +227,18 @@ impl fmt::Display for Open {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{debug}{date} {account}",
-            debug = self.debug,
+            "{date} {account}",
             date = self.date,
             account = self.account,
         )
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Close {
     date: NaiveDate,
     pub account: Account,
-    debug: Debug,
+    pub debug: DebugLine,
 }
 
 impl Close {
@@ -253,7 +248,7 @@ impl Close {
         let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
         let account = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             account,
@@ -266,8 +261,7 @@ impl fmt::Display for Close {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{debug}{date} {account}",
-            debug = self.debug,
+            "{date} {account}",
             date = self.date,
             account = self.account,
         )
@@ -279,7 +273,7 @@ pub struct Balance {
     date: NaiveDate,
     pub account: Account,
     pub amount: Amount,
-    pub debug: Debug,
+    pub debug: DebugLine,
 }
 
 impl Balance {
@@ -291,7 +285,7 @@ impl Balance {
         let amount_entry = pairs.next().unwrap();
         let amount = Amount::from_entry(amount_entry);
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             account,
@@ -305,8 +299,7 @@ impl fmt::Display for Balance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{debug}{date} {account} {amount}",
-            debug = self.debug,
+            "{date} {account} {amount}",
             date = self.date,
             account = self.account,
             amount = self.amount,
@@ -314,12 +307,12 @@ impl fmt::Display for Balance {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pad {
     date: NaiveDate,
-    account_to: Account,
+    pub account_to: Account,
     account_from: Account,
-    debug: Debug,
+    pub debug: DebugLine,
 }
 
 impl Pad {
@@ -330,7 +323,7 @@ impl Pad {
         let account_to = pairs.next().unwrap().as_str().to_string();
         let account_from = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             account_to,
@@ -344,8 +337,7 @@ impl fmt::Display for Pad {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{debug}{date} {account_to} {account_from}",
-            debug = self.debug,
+            "{date} {account_to} {account_from}",
             date = self.date,
             account_to = self.account_to,
             account_from = self.account_from,
@@ -358,7 +350,7 @@ pub struct Price {
     date: NaiveDate,
     commodity: String,
     amount: Amount,
-    debug: Debug,
+    debug: DebugLine,
 }
 
 impl Price {
@@ -370,7 +362,7 @@ impl Price {
         let amount_entry = pairs.next().unwrap();
         let amount = Amount::from_entry(amount_entry);
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             commodity,
@@ -384,8 +376,7 @@ impl fmt::Display for Price {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{debug}{date} {commodity} {amount}",
-            debug = self.debug,
+            "{date} {commodity} {amount}",
             date = self.date,
             commodity = self.commodity,
             amount = self.amount,
@@ -398,7 +389,7 @@ pub struct Document {
     date: NaiveDate,
     account: Account,
     path: String,
-    debug: Debug,
+    debug: DebugLine,
 }
 
 impl Document {
@@ -409,7 +400,7 @@ impl Document {
         let account = pairs.next().unwrap().as_str().to_string();
         let path = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             account,
@@ -423,8 +414,7 @@ impl fmt::Display for Document {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{debug}{date} documenet {account} {path}",
-            debug = self.debug,
+            "{date} documenet {account} {path}",
             date = self.date,
             account = self.account,
             path = self.path,
@@ -436,7 +426,7 @@ impl fmt::Display for Document {
 pub struct Posting {
     pub account: Account,
     pub amount: Option<Amount>,
-    debug: Option<Debug>,
+    debug: Option<DebugLine>,
 }
 
 impl Posting {
@@ -458,7 +448,7 @@ impl Posting {
             None
         };
         let (line, _) = entry.line_col();
-        let debug = Some(Debug { line });
+        let debug = Some(DebugLine { line });
         Self {
             account,
             amount,
@@ -474,13 +464,9 @@ impl fmt::Display for Posting {
             None => String::new(),
         };
 
-        let debug: Debug = Debug::default();
-        let debug = self.debug.as_ref().unwrap_or(&debug);
-
         write!(
             f,
-            "{debug}  {account} {amount}",
-            debug = debug,
+            "  {account} {amount}",
             account = self.account,
             amount = amount_str,
         )
@@ -493,9 +479,11 @@ pub struct Transaction {
     ty: String,
     payee: Option<String>,
     narration: String,
+    tag: Option<String>,
+    link: Option<String>,
     pub postings: Vec<Posting>,
     meta: Vec<Metadata>,
-    pub debug: Debug,
+    pub debug: DebugLine,
 }
 
 fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) {
@@ -517,23 +505,78 @@ impl Transaction {
         let (payee, narration) = get_payee_narration(&mut pairs);
         let mut postings: Vec<Posting> = Vec::new();
         let mut meta: Vec<Metadata> = Vec::new();
+        let mut link: Option<String> = None;
+        let mut tag: Option<String> = None;
         for pair in pairs {
-            if pair.as_rule() == Rule::posting {
-                postings.push(Posting::from_entry(pair));
-            } else if pair.as_rule() == Rule::metadata {
-                meta.push(Metadata::from_entry(pair));
+            match pair.as_rule() {
+                Rule::posting => {
+                    postings.push(Posting::from_entry(pair));
+                }
+                Rule::metadata => {
+                    meta.push(Metadata::from_entry(pair));
+                }
+                Rule::link => {
+                    link = Some(entry.as_str().to_owned());
+                }
+                Rule::tag => {
+                    tag = Some(entry.as_str().to_owned());
+                }
+                _ => {
+                    let (line, _) = entry.line_col();
+                    let debug = DebugLine::new(line);
+                    unreachable!("Unexpected entry in Transaction, abort.\n{debug}");
+                }
             }
         }
         let (line, _) = entry.line_col();
-        let debug = Debug { line };
+        let debug = DebugLine { line };
         Self {
             date,
             ty,
             payee,
             narration,
+            tag,
+            link,
             postings,
             meta,
             debug,
+        }
+    }
+    pub fn from_pad(pad: Pad, amount: Amount) -> Self {
+        let date = pad.date;
+        let ty = String::from("pad");
+        let payee = None;
+        let narration = String::new();
+        let debug: DebugLine = DebugLine::default();
+        let link = None;
+        let tag = None;
+        let amount2 = Some(Amount {
+            number: -amount.clone().number,
+            ccy: amount.clone().ccy,
+        });
+        let amount = Some(amount);
+        let p1 = Posting {
+            account: pad.account_to,
+            amount: amount.clone(),
+            debug: Some(debug.clone()),
+        };
+        let p2 = Posting {
+            account: pad.account_from,
+            amount: amount2,
+            debug: Some(debug.clone()),
+        };
+        let postings = vec![p1, p2];
+        let meta: Vec<Metadata> = Vec::new();
+        Self {
+            date,
+            ty,
+            payee,
+            narration,
+            link,
+            tag,
+            postings,
+            meta,
+            debug: debug.clone(),
         }
     }
 }
@@ -561,8 +604,7 @@ impl fmt::Display for Transaction {
 
         write!(
             f,
-            "{debug}{date} {ty} {payee} {narration}{meta}{postings}",
-            debug = self.debug,
+            "{date} {ty} {payee} {narration}{meta}{postings}",
             date = self.date,
             ty = self.ty,
             payee = payee_str,
@@ -652,7 +694,7 @@ mod tests {
         let a = &Open {
             date,
             account: String::from("Assets:Bank"),
-            debug: Debug { line: 2 },
+            debug: DebugLine { line: 2 },
         };
         let got = &dirs[0];
         match got {
