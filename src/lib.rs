@@ -2,35 +2,41 @@
 //!
 //! `bean-rs` is a [beancount](https://github.com/beancount/beancount) clone (one day...) in Rust
 
-mod balance;
 mod book;
 mod directives;
+mod error;
 mod grammar;
 mod parser;
 mod utils;
 
+use crate::directives::Directive;
+use crate::error::BeanError;
+
 /// Loads the provided text into a Vec of Directives
 /// containing opens, closes, transactions etc
-fn load(text: String) -> Result<Vec<directives::Directive>, parser::ParseError> {
-    let entries = parser::parse(&text)?;
-    let (dirs, bad) = parser::consume(entries);
-    if !bad.is_empty() {
-        utils::print_badlines(bad)
-    }
+fn load(text: String) -> (Vec<Directive>, Vec<BeanError>) {
+    let entries = parser::parse(&text);
+    let entries = match entries {
+        Ok(entries) => entries,
+        Err(error) => {
+            let empty_dirs: Vec<Directive> = Vec::new();
+            return (empty_dirs, vec![error]);
+        }
+    };
+    let (dirs, errs) = parser::consume(entries);
     let mut dirs = dirs;
     parser::sort(&mut dirs);
     book::balance_transactions(&mut dirs);
-    utils::print_directives(&dirs);
-    Ok(dirs)
+    utils::debug_directives(&dirs);
+    (dirs, errs)
 }
 
 /// Load the file at `path` and print the balance
 pub fn balance(path: &String) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
-    let directives = load(text).unwrap_or_else(|e| {
-        eprintln!("Error: something went wrong: {e}");
-        std::process::exit(1);
-    });
-    let bals = balance::get_balances(directives);
+    let (dirs, mut errs) = load(text);
+    let (bals, book_errs) = book::get_balances(dirs);
+    errs.extend(book_errs);
+    utils::print_errors(errs);
     utils::print_bals(bals);
 }

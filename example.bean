@@ -1,6 +1,5 @@
 * Example beancount file
-                   
-                   fo
+
 ** Random metadata stuff
 option "operating_currency" "GBP"
 2000-01-01 custom "fava-option" "language" "en"

@@ -1,6 +1,5 @@
 /// Only those types in the enum Directives are direct members of the Ledger.
 /// The rest are children of other elements.
-
 use std::collections::HashMap;
 use std::fmt;
 
@@ -16,25 +15,9 @@ const DATE_FMT: &str = "%Y-%m-%d";
 type Ccy = String;
 type Account = String;
 
-pub type CcyBal = HashMap<String, Decimal>;
-pub type AccBal = HashMap<String, CcyBal>;
-
-#[derive(Debug)]
-pub struct Badline {
-    line: usize,
-}
-
-impl Badline {
-    pub fn new(line: usize) -> Self {
-        Self { line }
-    }
-}
-
-impl fmt::Display for Badline {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Badline: L{line}", line=self.line)
-    }
-}
+pub type CcyBal = HashMap<Ccy, Decimal>;
+pub type AccBal = HashMap<Account, CcyBal>;
+pub type AccStatuses = HashMap<Account, bool>;
 
 #[derive(Clone, Debug, Default)]
 pub struct Debug {
@@ -49,7 +32,7 @@ impl PartialEq for Debug {
 
 impl fmt::Display for Debug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "L{line:0>4} ", line = self.line)
+        write!(f, "")
     }
 }
 
@@ -132,7 +115,7 @@ impl fmt::Display for ConfigOption {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Metadata {
     key: String,
     val: String,
@@ -196,7 +179,7 @@ impl Commodity {
 
 impl fmt::Display for Commodity {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut meta_string: String = "".to_owned();
+        let mut meta_string: String = String::new();
         let m_slice = &self.meta[..];
         for m in m_slice {
             let line: &str = &format!("\n{m}");
@@ -216,7 +199,7 @@ impl fmt::Display for Commodity {
 #[derive(Debug, PartialEq)]
 pub struct Open {
     date: NaiveDate,
-    account: Account,
+    pub account: Account,
     debug: Debug,
 }
 
@@ -251,7 +234,7 @@ impl fmt::Display for Open {
 #[derive(Debug, PartialEq)]
 pub struct Close {
     date: NaiveDate,
-    account: Account,
+    pub account: Account,
     debug: Debug,
 }
 
@@ -480,7 +463,7 @@ impl fmt::Display for Posting {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let amount_str = match &self.amount {
             Some(amount) => amount.to_string(),
-            None => String::from(""),
+            None => String::new(),
         };
 
         let debug: Debug = Debug::default();
@@ -496,7 +479,7 @@ impl fmt::Display for Posting {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
     date: NaiveDate,
     ty: String,
@@ -554,14 +537,14 @@ impl fmt::Display for Transaction {
             None => "",
         };
 
-        let mut posting_string: String = "".to_owned();
+        let mut posting_string = String::new();
         let slice = &self.postings[..];
         for p in slice {
             let line: &str = &format!("\n{p}");
             posting_string.push_str(line);
         }
 
-        let mut meta_string: String = "".to_owned();
+        let mut meta_string = String::new();
         let m_slice = &self.meta[..];
         for m in m_slice {
             let line: &str = &format!("\n{m}");
@@ -584,6 +567,7 @@ impl fmt::Display for Transaction {
 
 /// The "ledger" is made up of Directives
 /// Most operations will be done by looping through a Vec of these
+#[derive(Debug)]
 pub enum Directive {
     ConfigCustom(ConfigCustom),
     ConfigOption(ConfigOption),
@@ -612,18 +596,20 @@ impl Directive {
             Directive::Transaction(d) => &d.date,
         }
     }
+    /// This follows beancount's ordering logic, that always evaluates
+    /// opens -> balances -> the rest -> documents -> closes
     pub fn order(&self) -> i8 {
         match self {
+            Directive::Open(_) => -2,
+            Directive::Balance(_) => -1,
             Directive::ConfigCustom(_) => 0,
             Directive::ConfigOption(_) => 0,
             Directive::Commodity(_) => 0,
-            Directive::Open(_) => -2,
-            Directive::Close(_) => 2,
-            Directive::Balance(_) => -1,
             Directive::Pad(_) => 0,
             Directive::Price(_) => 0,
-            Directive::Document(_) => 1,
             Directive::Transaction(_) => 0,
+            Directive::Document(_) => 1,
+            Directive::Close(_) => 2,
         }
     }
 }

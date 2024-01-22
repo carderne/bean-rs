@@ -1,17 +1,11 @@
 use log::debug;
 use pest::iterators::Pair;
 
+use crate::directives::{AccBal, Directive};
+use crate::error::BeanError;
 use crate::grammar::Rule;
-use crate::directives::{AccBal, Badline, Directive};
-use crate::book::BookError;
 
-pub fn print_book_errors(errors: &Vec<BookError>) {
-    for e in errors {
-        println!("{e:?}");
-    }
-}
-
-pub fn print_directives(directives: &Vec<Directive>) {
+pub fn debug_directives(directives: &Vec<Directive>) {
     for d in directives {
         debug!("{d}")
     }
@@ -26,13 +20,16 @@ pub fn print_bals(bals: AccBal) {
     }
 }
 
-pub fn print_badlines(bad: Vec<Badline>) {
-    for b in bad {
-        eprintln!("{b}");
+pub fn print_errors(errs: Vec<BeanError>) {
+    if !errs.is_empty() {
+        eprintln!("-- Errors -- ");
+    }
+    for e in errs {
+        eprintln!("{e}");
     }
 }
 
-pub fn print_pair(pair: &Pair<Rule>, depth: usize) {
+pub fn debug_pair(pair: &Pair<Rule>, depth: usize) {
     if depth == 0 {
         debug!("full parse output");
     }
@@ -47,7 +44,7 @@ pub fn print_pair(pair: &Pair<Rule>, depth: usize) {
         // Not a leaf node, just print the rule
         debug!("{}{:?}:", indent, pair.as_rule());
         for inner_pair in inner_pairs {
-            print_pair(&inner_pair, depth + 1);
+            debug_pair(&inner_pair, depth + 1);
         }
     }
     if depth == 0 {
@@ -59,8 +56,8 @@ pub fn print_pair(pair: &Pair<Rule>, depth: usize) {
 mod tests {
     use super::*;
     #[test]
-    fn useless_print_directives() {
+    fn useless_debug_directives() {
         let vec = Vec::new();
-        print_directives(&vec)
+        debug_directives(&vec)
     }
 }

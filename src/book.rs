@@ -1,43 +1,19 @@
-use std::{collections::HashMap, str::FromStr};
-use std::fmt;
+use std::collections::HashMap;
 
 use log::debug;
 use rust_decimal::Decimal;
 
-use crate::directives::{CcyBal, Directive, Posting, Transaction};
-use crate::utils;
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum BookErrorType {
-    MultipleEmptyPostings,
-    EmptyPosting,
-    UnbalancedTransaction,
-}
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct BookError {
-    ty: BookErrorType,
-    line: usize,
-    msg: String,
-}
-
-impl fmt::Display for BookError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "BookError: ({ty:?}) L{line}: {msg}",
-            ty = self.ty,
-            line = self.line,
-            msg = self.msg,
-        )
-    }
-}
+use crate::{
+    directives::{AccBal, AccStatuses, CcyBal, Directive, Posting, Transaction},
+    error::{BeanError, ErrorType},
+};
 
 /// Checks postings with no `Amount` and calculates the values
 /// needed for the Transaction to balance.
-fn complete_postings(tx: &mut Transaction) -> Vec<BookError> {
+fn complete_postings(tx: &mut Transaction) -> Vec<BeanError> {
     debug!("balancing {tx:?}");
 
-    let mut errors: Vec<BookError> = Vec::new();
+    let mut errs: Vec<BeanError> = Vec::new();
 
     let mut ccy_bals: CcyBal = HashMap::new();
     let mut postings: Vec<Posting> = Vec::new();
@@ -49,14 +25,14 @@ fn complete_postings(tx: &mut Transaction) -> Vec<BookError> {
         match &p.amount {
             None => {
                 if found_empty_posting {
-                    let line = tx.debug.line;
-                    let ty = BookErrorType::MultipleEmptyPostings;
-                    let err = BookError {
-                        ty,
-                        line,
-                        msg: String::from(""),
-                    };
-                    errors.push(err);
+                    let err = BeanError::new(
+                        ErrorType::MultipleEmptyPostings,
+                        "",
+                        tx.debug.line,
+                        "Found multiple empty postings for Transaction:",
+                        Some(Directive::Transaction(tx.clone())),
+                    );
+                    errs.push(err);
                 }
                 empty_posting_index = i;
                 found_empty_posting = true;
@@ -77,25 +53,25 @@ fn complete_postings(tx: &mut Transaction) -> Vec<BookError> {
     }
 
     tx.postings = postings;
-    errors
+    errs
 }
 
 /// Checks that Transaction balances in all currencies to 0
 /// MUST be run after `complete_postings`
-fn check_transaction(tx: &Transaction) -> Vec<BookError> {
-    let mut errors: Vec<BookError> = Vec::new();
+fn check_transaction(tx: &Transaction) -> Vec<BeanError> {
+    let mut errs: Vec<BeanError> = Vec::new();
     let mut ccy_bals: CcyBal = HashMap::new();
     for p in tx.postings.iter() {
         match &p.amount {
             None => {
-                let line = tx.debug.line;
-                let ty = BookErrorType::EmptyPosting;
-                let err = BookError {
-                    ty,
-                    line,
-                    msg: String::from(""),
-                };
-                errors.push(err);
+                let err = BeanError::new(
+                    ErrorType::EmptyPosting,
+                    "",
+                    tx.debug.line,
+                    "BUG: Found empty postings after they should've been removed!",
+                    Some(Directive::Transaction(tx.clone())),
+                );
+                errs.push(err);
             }
             Some(amount) => {
                 *ccy_bals.entry(amount.ccy.clone()).or_default() += amount.number;
@@ -105,28 +81,80 @@ fn check_transaction(tx: &Transaction) -> Vec<BookError> {
 
     for (ccy, bal) in ccy_bals {
         // TODO get precision from context
-        if bal.abs() > Decimal::from_str("0.001").unwrap() {
-            let line = tx.debug.line;
-            let ty = BookErrorType::UnbalancedTransaction;
-            let err = BookError {
-                ty,
-                line,
-                msg: ccy.to_string(),
-            };
-            errors.push(err);
+        if bal.abs() > Decimal::new(1, 3) {
+            let err = BeanError::new(
+                ErrorType::UnbalancedTransaction,
+                "",
+                tx.debug.line,
+                &format!("Transaction unbalanced for currency: {ccy}", ccy=&ccy),
+                Some(Directive::Transaction(tx.clone())),
+            );
+            errs.push(err);
         }
     }
-    errors
+    errs
 }
 
 /// Complete postings as needed and check balances
-pub fn balance_transactions(directives: &mut [Directive]) {
+/// Directives MUST be sorted appropriately before calling this
+pub fn balance_transactions(directives: &mut [Directive]) -> Vec<BeanError> {
+    let mut errs: Vec<BeanError> = Vec::new();
     for d in directives.iter_mut() {
         if let Directive::Transaction(tx) = d {
-            let errs = complete_postings(tx);
-            utils::print_book_errors(&errs);
-            let errs = check_transaction(tx);
-            utils::print_book_errors(&errs);
+            errs.extend(complete_postings(tx));
+            errs.extend(check_transaction(tx));
         }
     }
+    errs
+}
+
+/// Get balances for all accounts in all currencies
+pub fn get_balances(directives: Vec<Directive>) -> (AccBal, Vec<BeanError>) {
+    let mut bals: AccBal = HashMap::new();
+    let mut accs: AccStatuses = HashMap::new();
+    let mut errs: Vec<BeanError> = Vec::new();
+    for d in directives {
+        match d {
+            Directive::Open(open) => {
+                accs.insert(open.account, true);
+            }
+            Directive::Close(close) => {
+                accs.insert(close.account, false);
+            }
+            Directive::Transaction(tx) => {
+                for p in &tx.postings {
+                    if let Some(amount) = &p.amount {
+                        let status = accs.get(&p.account);
+                        match status {
+                            Some(open) => {
+                                if *open {
+                                    let entry = bals.entry(p.account.clone()).or_default();
+                                    *entry.entry(amount.ccy.clone()).or_default() += amount.number;
+                                } else {
+                                    errs.push(BeanError::new(
+                                        ErrorType::ClosedAccount,
+                                        "",
+                                        tx.debug.line,
+                                        &format!("Transaction referred to closed Account: {account}", account=&p.account),
+                                        Some(Directive::Transaction(tx.clone())),
+                                    ));
+                                }
+                            }
+                            None => {
+                                errs.push(BeanError::new(
+                                    ErrorType::NoAccount,
+                                    "",
+                                    tx.debug.line,
+                                    &format!("Transaction referred to non-existent Account: {account}", account=&p.account),
+                                    Some(Directive::Transaction(tx.clone())),
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+    (bals, errs)
 }

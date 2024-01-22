@@ -12,7 +12,7 @@ Planned features:
 - [x] Propagate line numbers for debugging
 - [x] Calculate account balances
 - [x] Use proper Decimal handling
-- [ ] Validate transactions against `open`/`close` directives
+- [x] Validate transactions against `open`/`close` directives
 - [ ] Validate `balance` directives
 - [ ] Open/close with multiple currencies
 

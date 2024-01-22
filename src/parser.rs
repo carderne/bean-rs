@@ -1,72 +1,44 @@
 use std::cmp::Ordering;
-use std::fmt;
 
 use log::debug;
 use pest::error::LineColLocation;
 use pest::iterators::Pairs;
 use pest::Parser;
 
+use crate::directives;
 use crate::directives::Directive;
-use crate::directives::{self, Badline};
+use crate::error::{BeanError, ErrorType};
 use crate::grammar::{BeanParser, Rule};
 use crate::utils;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum ParseErrorType {
-    Parse, // parse error from Pest
-    Into,  // error while going into `root` pair
-}
-
-/// Could possibly just use Pest's `Error`
-/// but this seems a bit nicer
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct ParseError {
-    ty: ParseErrorType,
-    line: usize,
-    col: usize,
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "ParseError: ({ty:?}) L{line} C{col}",
-            ty = self.ty,
-            line = self.line,
-            col = self.col,
-        )
-    }
-}
-
 /// Parse the text using Pest
-pub fn parse(data: &str) -> Result<Pairs<'_, Rule>, ParseError> {
+pub fn parse(data: &str) -> Result<Pairs<'_, Rule>, BeanError> {
     let mut entries = match BeanParser::parse(Rule::root, data) {
         Ok(pairs) => Ok(pairs),
         Err(error) => {
-            let (line, col) = match error.line_col {
+            let (line, _) = match error.line_col {
                 LineColLocation::Pos(pos) => pos,
                 LineColLocation::Span(pos, _) => pos,
             };
-            let ty = ParseErrorType::Parse;
-            Err(ParseError { ty, line, col })
+            let err = BeanError::new(ErrorType::Parse, "", line, "Parsing error", None);
+            Err(err)
         }
     }?;
     match entries.next() {
         Some(entry) => {
-            utils::print_pair(&entry, 0);
+            utils::debug_pair(&entry, 0);
             Ok(entry.into_inner())
         }
-        None => Err(ParseError {
-            ty: ParseErrorType::Into,
-            line: 0,
-            col: 0,
-        }),
+        None => {
+            let err = BeanError::new(ErrorType::Into, "", 0, "Parsing error", None);
+            Err(err)
+        }
     }
 }
 
 // Convert the AST Pest Pairs into a Vec of Directives
-pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<Badline>) {
-    let mut bad: Vec<Badline> = Vec::with_capacity(entries.len());
+pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
+    let mut errs: Vec<BeanError> = Vec::with_capacity(entries.len());
     let mut dirs: Vec<Directive> = Vec::new();
     for entry in entries {
         debug!("{:?}\t{:?}", entry.as_rule(), entry.as_span(),);
@@ -114,12 +86,17 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<Badline>) {
             }
             Rule::badline => {
                 let (line, _) = entry.line_col();
-                bad.push(directives::Badline::new(line));
+                let err = BeanError::new(ErrorType::Badline, "", line, "Found unparseable line", None);
+                errs.push(err);
             }
-            _ => unreachable!("no rule for this entry!"),
+            _ => {
+                let (line, _) = entry.line_col();
+                let err = BeanError::new(ErrorType::UnknownEntry, "", line, "BUG: Found unexpected entity", None);
+                errs.push(err);
+            }
         };
     }
-    (dirs, bad)
+    (dirs, errs)
 }
 
 /// Sort the Directives by date and `order` inplace
