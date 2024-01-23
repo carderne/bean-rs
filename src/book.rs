@@ -120,11 +120,24 @@ fn proc_tx(tx: &Transaction, bals: &mut AccBal, accs: &mut AccStatuses, errs: &m
             let status = accs.get(&p.account);
             match status {
                 Some(open) => {
-                    // the account is open
-                    // this is the only valid case
-                    if *open {
-                        let entry = bals.entry(p.account.clone()).or_default();
-                        *entry.entry(amount.ccy.clone()).or_default() += amount.number;
+                    // the account is open: this is the happy path!
+                    if open.0 {
+                        let ccy = p.amount.clone().unwrap().ccy;
+                        if open.1.is_empty() || open.1.contains(&ccy) {
+                            let entry = bals.entry(p.account.clone()).or_default();
+                            *entry.entry(amount.ccy.clone()).or_default() += amount.number;
+                        } else {
+                            let err = BeanError::new(
+                                ErrorType::InvalidCcy,
+                                &tx.debug,
+                                &format!(
+                                    "Invalid currency {ccy} for {account}",
+                                    account = &p.account
+                                ),
+                                Some(&Directive::Transaction(tx.clone())),
+                            );
+                            errs.push(err);
+                        }
                     // the account has been closed
                     } else {
                         let err = BeanError::new(
@@ -170,7 +183,7 @@ pub fn get_balances(dirs: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
             Directive::Open(open) => {
                 if let Some(opened) = accs.get(&open.account) {
                     // the account has already been opened
-                    if *opened {
+                    if opened.0 {
                         let err = BeanError::new(
                             ErrorType::DuplicateOpen,
                             &open.debug,
@@ -183,12 +196,13 @@ pub fn get_balances(dirs: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
                         errs.push(err);
                     }
                 }
-                accs.insert(open.account.clone(), true);
+                let valid_ccys = open.ccys.clone();
+                accs.insert(open.account.clone(), (true, valid_ccys));
             }
             Directive::Close(close) => {
                 if let Some(opened) = accs.get(&close.account) {
                     // the account has already been closed
-                    if !*opened {
+                    if !opened.0 {
                         let err = BeanError::new(
                             ErrorType::DuplicateClose,
                             &close.debug,
@@ -201,7 +215,7 @@ pub fn get_balances(dirs: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
                         errs.push(err);
                     }
                 }
-                accs.insert(close.account.clone(), false);
+                accs.insert(close.account.clone(), (false, Vec::new()));
             }
             Directive::Pad(pad) => {
                 let acc = &pad.account_to;
@@ -265,7 +279,7 @@ pub fn get_balances(dirs: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
                 // If the balance is fine, do nothing!
             }
             Directive::Transaction(tx) => {
-                proc_tx(&tx, &mut bals, &mut accs, &mut errs);
+                proc_tx(tx, &mut bals, &mut accs, &mut errs);
             }
             _ => (),
         }

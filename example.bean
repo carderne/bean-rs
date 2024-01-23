@@ -11,7 +11,7 @@ option "operating_currency" "GBP"
 2023-01-01 open Assets:Bank                 GBP
 2023-01-02 open Assets:Invest               GOO  "FIFO"
   portfolio: "all"
-2023-01-03 open Expenses:Food               GBP  ;, USD
+2023-01-03 open Expenses:Food               GBP, USD
 2023-01-04 open Income:Job                  GBP
 
 ** Transactions
@@ -27,7 +27,7 @@ option "operating_currency" "GBP"
 
 2023-02-05 * "Shop" "More food" #tag ^link
   Assets:Bank                        -40.00 GBP
-  Expenses:Food                       40.00 GBP
+  Expenses:Food                       40.00 USD
 
 ** Balances and pads
 2023-03-01 pad Assets:Invest Equity:Bals
