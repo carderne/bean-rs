@@ -5,8 +5,8 @@ use pest::error::LineColLocation;
 use pest::iterators::Pairs;
 use pest::Parser;
 
-use crate::directives;
 use crate::directives::Directive;
+use crate::directives::{self, DebugLine};
 use crate::error::{BeanError, ErrorType};
 use crate::grammar::{BeanParser, Rule};
 use crate::utils;
@@ -20,7 +20,8 @@ pub fn parse(data: &str) -> Result<Pairs<'_, Rule>, BeanError> {
                 LineColLocation::Pos(pos) => pos,
                 LineColLocation::Span(pos, _) => pos,
             };
-            let err = BeanError::new(ErrorType::Parse, "", line, "Parsing error", None);
+            let debug = DebugLine::new(line);
+            let err = BeanError::new(ErrorType::Parse, &debug, "Parsing error", None);
             Err(err)
         }
     }?;
@@ -30,7 +31,8 @@ pub fn parse(data: &str) -> Result<Pairs<'_, Rule>, BeanError> {
             Ok(entry.into_inner())
         }
         None => {
-            let err = BeanError::new(ErrorType::Into, "", 0, "Parsing error", None);
+            let debug = DebugLine::default();
+            let err = BeanError::new(ErrorType::Into, &debug, "Parsing error", None);
             Err(err)
         }
     }
@@ -86,13 +88,15 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
             }
             Rule::badline => {
                 let (line, _) = entry.line_col();
-                let err = BeanError::new(ErrorType::Badline, "", line, "Found unparseable line", None);
+                let debug = DebugLine::new(line);
+                let err =
+                    BeanError::new(ErrorType::Badline, &debug, "Found unparseable line", None);
                 errs.push(err);
             }
             _ => {
                 let (line, _) = entry.line_col();
-                let err = BeanError::new(ErrorType::UnknownEntry, "", line, "BUG: Found unexpected entity", None);
-                errs.push(err);
+                let debug = DebugLine::new(line);
+                unreachable!("Found unexpected entry in file, abort.\n{debug}");
             }
         };
     }
@@ -100,8 +104,8 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
 }
 
 /// Sort the Directives by date and `order` inplace
-pub fn sort(directives: &mut [Directive]) {
-    directives.sort_by(|a, b| match a.date().cmp(b.date()) {
+pub fn sort(dirs: &mut [Directive]) {
+    dirs.sort_by(|a, b| match a.date().cmp(b.date()) {
         Ordering::Equal => a.order().cmp(&b.order()),
         other => other,
     });

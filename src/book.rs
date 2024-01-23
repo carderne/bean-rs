@@ -8,31 +8,42 @@ use crate::{
         AccBal, AccStatuses, Account, Amount, CcyBal, Directive, Pad, Posting, Transaction,
     },
     error::{BeanError, ErrorType},
+    parser,
 };
 
 /// Checks postings with no `Amount` and calculates the values
 /// needed for the Transaction to balance.
+///
+/// If a Transaction is unbalanced but it has a Posting with no Amount,
+/// then the account from that Posting is used to balance the transaction.
+/// If there are multiple unbalanced currencies, a Posting will be
+/// created for each one, all to the same Account.
 fn complete_postings(tx: &mut Transaction) -> Vec<BeanError> {
     debug!("balancing {tx:?}");
 
-    let mut errs: Vec<BeanError> = Vec::new();
-
     let mut ccy_bals: CcyBal = HashMap::new();
+
+    // (Revisit this) Instead of appending to the original postings,
+    // create a brand new Vec. Makes the logic of
+    // deleting or adding 0, 1 or more Postings a bit easier
     let mut postings: Vec<Posting> = Vec::new();
+
+    let mut errs: Vec<BeanError> = Vec::new();
 
     let mut found_empty_posting = false;
     let mut empty_posting_index = 0;
 
     for (i, p) in tx.postings.iter().enumerate() {
         match &p.amount {
+            // if the posting has no amount specified
             None => {
+                // there cant be more than one empty posting in a transaction
                 if found_empty_posting {
                     let err = BeanError::new(
                         ErrorType::MultipleEmptyPostings,
-                        "",
-                        tx.debug.line,
+                        &tx.debug,
                         "Found multiple empty postings for Transaction:",
-                        Some(Directive::Transaction(tx.clone())),
+                        Some(&Directive::Transaction(tx.clone())),
                     );
                     errs.push(err);
                 }
@@ -65,16 +76,8 @@ fn check_transaction(tx: &Transaction) -> Vec<BeanError> {
     let mut ccy_bals: CcyBal = HashMap::new();
     for p in tx.postings.iter() {
         match &p.amount {
-            None => {
-                let err = BeanError::new(
-                    ErrorType::EmptyPosting,
-                    "",
-                    tx.debug.line,
-                    "BUG: Found empty postings after they should've been removed!",
-                    Some(Directive::Transaction(tx.clone())),
-                );
-                errs.push(err);
-            }
+            // TODO use RawTransaction/Transaction and RawPosting/Posting to make impossible
+            None => panic!("Found empty postings after they should have been replaced, abort."),
             Some(amount) => {
                 *ccy_bals.entry(amount.ccy.clone()).or_default() += amount.number;
             }
@@ -86,10 +89,9 @@ fn check_transaction(tx: &Transaction) -> Vec<BeanError> {
         if bal.abs() > Decimal::new(1, 3) {
             let err = BeanError::new(
                 ErrorType::UnbalancedTransaction,
-                "",
-                tx.debug.line,
-                &format!("Transaction unbalanced for currency: {ccy}", ccy = &ccy),
-                Some(Directive::Transaction(tx.clone())),
+                &tx.debug,
+                &format!("Transaction unbalanced for currency: {ccy}"),
+                Some(&Directive::Transaction(tx.clone())),
             );
             errs.push(err);
         }
@@ -110,39 +112,43 @@ pub fn balance_transactions(directives: &mut [Directive]) -> Vec<BeanError> {
     errs
 }
 
+/// This is run within `get_balances`
+/// Removed here as used in multiple places
 fn proc_tx(tx: &Transaction, bals: &mut AccBal, accs: &mut AccStatuses, errs: &mut Vec<BeanError>) {
     for p in &tx.postings {
         if let Some(amount) = &p.amount {
             let status = accs.get(&p.account);
             match status {
                 Some(open) => {
+                    // the account is open
+                    // this is the only valid case
                     if *open {
                         let entry = bals.entry(p.account.clone()).or_default();
                         *entry.entry(amount.ccy.clone()).or_default() += amount.number;
+                    // the account has been closed
                     } else {
                         let err = BeanError::new(
                             ErrorType::ClosedAccount,
-                            "",
-                            tx.debug.line,
+                            &tx.debug,
                             &format!(
                                 "Transaction referred to closed Account: {account}",
                                 account = &p.account
                             ),
-                            Some(Directive::Transaction(tx.clone())),
+                            Some(&Directive::Transaction(tx.clone())),
                         );
                         errs.push(err);
                     }
                 }
+                // the account was never opened at all (it doesnt exist)
                 None => {
                     let err = BeanError::new(
                         ErrorType::NoAccount,
-                        "",
-                        tx.debug.line,
+                        &tx.debug,
                         &format!(
                             "Transaction referred to non-existent Account: {account}",
                             account = &p.account
                         ),
-                        Some(Directive::Transaction(tx.clone())),
+                        Some(&Directive::Transaction(tx.clone())),
                     );
                     errs.push(err);
                 }
@@ -152,19 +158,49 @@ fn proc_tx(tx: &Transaction, bals: &mut AccBal, accs: &mut AccStatuses, errs: &m
 }
 
 /// Get balances for all accounts in all currencies
-pub fn get_balances(directives: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
+pub fn get_balances(dirs: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
     let mut bals: AccBal = HashMap::new();
     let mut accs: AccStatuses = HashMap::new();
     let mut errs: Vec<BeanError> = Vec::new();
     let mut pads: HashMap<Account, (bool, Pad)> = HashMap::new();
     let mut ptxs: Vec<Directive> = Vec::new();
 
-    for d in directives.iter() {
+    for d in dirs.iter() {
         match d {
             Directive::Open(open) => {
+                if let Some(opened) = accs.get(&open.account) {
+                    // the account has already been opened
+                    if *opened {
+                        let err = BeanError::new(
+                            ErrorType::DuplicateOpen,
+                            &open.debug,
+                            &format!(
+                                "Duplicate open directive for {account}",
+                                account = &open.account
+                            ),
+                            Some(&Directive::Open(open.clone())),
+                        );
+                        errs.push(err);
+                    }
+                }
                 accs.insert(open.account.clone(), true);
             }
             Directive::Close(close) => {
+                if let Some(opened) = accs.get(&close.account) {
+                    // the account has already been closed
+                    if !*opened {
+                        let err = BeanError::new(
+                            ErrorType::DuplicateClose,
+                            &close.debug,
+                            &format!(
+                                "Duplicate close directive for {account}",
+                                account = &close.account
+                            ),
+                            Some(&Directive::Close(close.clone())),
+                        );
+                        errs.push(err);
+                    }
+                }
                 accs.insert(close.account.clone(), false);
             }
             Directive::Pad(pad) => {
@@ -174,10 +210,9 @@ pub fn get_balances(directives: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>)
                     if !used {
                         let err = BeanError::new(
                             ErrorType::UnusedPad,
-                            "",
-                            prev_pad.debug.line,
-                            &format!("Multiple pads for account {acc}"),
-                            Some(Directive::Pad(prev_pad.clone())),
+                            &prev_pad.debug,
+                            &format!("Multiple pads for {acc}"),
+                            Some(&Directive::Pad(prev_pad.clone())),
                         );
                         errs.push(err);
                     }
@@ -185,32 +220,49 @@ pub fn get_balances(directives: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>)
                 pads.insert(acc.clone(), (false, pad.clone()));
             }
             Directive::Balance(bal) => {
+                // Check the Balance directive against the accumulated balance in `bals`
+
+                // Get the accumulated balance
                 let def = &Decimal::default();
-                let entry = bals.entry(bal.account.clone()).or_default();
                 let ccy = &bal.amount.ccy;
+                let entry = bals.entry(bal.account.clone()).or_default();
+
+                // Compare against the current balance
                 let accum_bal = entry.get(ccy).unwrap_or(def);
                 let assert_bal = bal.amount.number;
                 let diff = assert_bal - *accum_bal;
+                // TODO get precision from context
                 if diff > Decimal::new(1, 3) {
+                    // If we have a Pad available to use to make up the difference
                     if let Some(val) = pads.get(&bal.account) {
                         let (_, pad) = val;
+                        // The amount is the diff and we use the ccy from the Balance
+                        // as the Pad has no ccy
                         let amount = Amount::new(diff, ccy.clone());
+
+                        // Create a new Transaction that will stand in for the Pad
                         let newtx = Transaction::from_pad(pad.clone(), amount);
+
+                        // Keep track that the Pad has been 'used'
+                        // Can be used again for another ccy if needed
                         pads.insert(bal.account.clone(), (true, pad.clone()));
+
+                        // Process the new transaction
                         proc_tx(&newtx, &mut bals, &mut accs, &mut errs);
+                        // And then add it to the main Vec of directives
                         let newtx = Directive::Transaction(newtx);
                         ptxs.push(newtx);
                     } else {
                         let err = BeanError::new(
                             ErrorType::BalanceAssertion,
-                            "",
-                            bal.debug.line,
+                            &bal.debug,
                             &format!("Balance assertion failed: asserted {assert_bal} is not equal to {accum_bal}"),
-                            Some(Directive::Balance(bal.clone())),
+                            Some(&Directive::Balance(bal.clone())),
                         );
                         errs.push(err);
                     }
                 }
+                // If the balance is fine, do nothing!
             }
             Directive::Transaction(tx) => {
                 proc_tx(&tx, &mut bals, &mut accs, &mut errs);
@@ -218,6 +270,7 @@ pub fn get_balances(directives: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>)
             _ => (),
         }
     }
-    directives.extend(ptxs);
+    dirs.extend(ptxs);
+    parser::sort(dirs);
     (bals, errs)
 }

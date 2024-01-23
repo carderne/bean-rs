@@ -1,18 +1,18 @@
 use std::fmt;
 
-use crate::directives::Directive;
+use crate::directives::{DebugLine, Directive};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ErrorType {
     Parse,        // parse error from Pest
     Into,         // error while going into `root` pair
     Badline,      // un-parseable line found in input
-    UnknownEntry, // `consume` match statement exhausted
     MultipleEmptyPostings,
-    EmptyPosting,
     UnbalancedTransaction,
     NoAccount,
     ClosedAccount,
+    DuplicateOpen,
+    DuplicateClose,
     BalanceAssertion,
     UnusedPad,
 }
@@ -21,44 +21,29 @@ pub enum ErrorType {
 #[derive(Debug)]
 pub struct BeanError {
     ty: ErrorType, // not yet used anywhere
-    file: String,  // TODO not yet populated anywhere!
-    line: usize,
+    debug: DebugLine,
     msg: String,
-    dir: Option<Directive>,
 }
 
 impl BeanError {
-    pub fn new(
-        ty: ErrorType,
-        file: &str,
-        line: usize,
-        msg: &str,
-        dir: Option<Directive>,
-    ) -> Self {
-        let file = file.to_owned();
-        let msg = msg.to_owned();
-        Self {
-            ty,
-            file,
-            line,
-            msg,
-            dir,
+    pub fn new(ty: ErrorType, debug: &DebugLine, msg: &str, dir: Option<&Directive>) -> Self {
+        let mut msg = msg.to_owned();
+        let debug = debug.clone();
+        if let Some(dir) = dir {
+            let m = format!("\n{dir}");
+            msg.push_str(&m);
         }
+        Self { ty, debug, msg }
     }
 }
 
 impl fmt::Display for BeanError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let dir = match &self.dir {
-            Some(d) => format!("\n{d}"),
-            None => String::new(),
-        };
         write!(
             f,
-            "line:{line}:  {msg}{dir}",
-            line = self.line,
+            "line:{debug}:  {msg}",
+            debug = self.debug,
             msg = self.msg,
-            dir = dir,
         )
     }
 }
