@@ -17,7 +17,7 @@ pub type Account = String;
 
 pub type CcyBal = HashMap<Ccy, Decimal>;
 pub type AccBal = HashMap<Account, CcyBal>;
-pub type AccStatuses = HashMap<Account, bool>;
+pub type AccStatuses = HashMap<Account, (bool, Vec<Ccy>)>;
 
 #[derive(Clone, Debug, Default)]
 pub struct DebugLine {
@@ -204,6 +204,8 @@ impl fmt::Display for Commodity {
 pub struct Open {
     date: NaiveDate,
     pub account: Account,
+    pub ccys: Vec<Ccy>,
+    meta: Vec<Metadata>,
     pub debug: DebugLine,
 }
 
@@ -215,9 +217,29 @@ impl Open {
         let account = pairs.next().unwrap().as_str().to_string();
         let (line, _) = entry.line_col();
         let debug = DebugLine { line };
+
+        let mut ccys: Vec<Ccy> = Vec::new();
+        let mut meta: Vec<Metadata> = Vec::new();
+
+        for pair in pairs {
+            match pair.as_rule() {
+                Rule::ccy => {
+                    let c = pair.as_str().to_owned();
+                    ccys.push(c);
+                }
+                Rule::metadata => {
+                    let m = Metadata::from_entry(pair);
+                    meta.push(m);
+                }
+                _ => (),
+            }
+        }
+
         Self {
             date,
             account,
+            ccys,
+            meta,
             debug,
         }
     }
@@ -694,6 +716,8 @@ mod tests {
         let a = &Open {
             date,
             account: String::from("Assets:Bank"),
+            ccys: vec!["GBP".to_owned()],
+            meta: Vec::new(),
             debug: DebugLine { line: 2 },
         };
         let got = &dirs[0];

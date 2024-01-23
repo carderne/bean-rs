@@ -15,7 +15,9 @@ Planned features:
 - [x] Validate transactions against `open`/`close` directives
 - [x] Validate `balance` directives
 - [x] Pad statements
-- [ ] Open/close with multiple currencies
+- [x] Open/close with multiple currencies
+- [ ] Currency conversions
+- [ ] Price/cost and FIFO
 
 ## Usage
 ### Install

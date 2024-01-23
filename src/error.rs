@@ -15,6 +15,7 @@ pub enum ErrorType {
     DuplicateClose,
     BalanceAssertion,
     UnusedPad,
+    InvalidCcy,
 }
 
 #[allow(dead_code)]
