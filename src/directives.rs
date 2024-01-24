@@ -68,7 +68,17 @@ impl Amount {
     }
     pub fn from_entry(entry: Pair<Rule>) -> Self {
         let mut pairs = entry.clone().into_inner();
-        let number: Decimal = pairs.next().unwrap().as_str().parse().unwrap();
+        let mut number: String = pairs.next().unwrap().as_str().to_string();
+        if number.contains(',') {
+            number = number.replace(',', "");
+        }
+        let number: Decimal = match number.parse() {
+            Ok(num) => num,
+            Err(_) => {
+                let (line, _) = entry.line_col();
+                panic!("Un-parseable decimal at line:{line}");
+            }
+        };
         let ccy = pairs.next().unwrap().as_str().to_string();
         Self { number, ccy }
     }
@@ -131,6 +141,7 @@ pub struct Metadata {
     key: String,
     val: String,
     debug: DebugLine,
+    // TODO: parse metadata in all directives
 }
 
 impl Metadata {
@@ -501,21 +512,23 @@ pub struct Transaction {
     ty: String,
     payee: Option<String>,
     narration: String,
-    tag: Option<String>,
-    link: Option<String>,
+    tag: Option<String>, // TODO can have multiple
+    link: Option<String>, // TODO can have multiple
     pub postings: Vec<Posting>,
     meta: Vec<Metadata>,
     pub debug: DebugLine,
+    // TODO add at_cost, at_price
 }
 
 fn get_payee_narration(pairs: &mut Pairs<Rule>) -> (Option<String>, String) {
     let first_val = pairs.next().unwrap().as_str().to_string();
-    if pairs.peek().unwrap().as_rule() == Rule::narration {
-        let narration = pairs.next().unwrap().as_str().to_string();
-        (Some(first_val), narration)
-    } else {
-        (None, first_val)
+    if let Some(pair) = pairs.peek() {
+        if pair.as_rule() == Rule::narration {
+            let narration = pairs.next().unwrap().as_str().to_string();
+            return (Some(first_val), narration);
+        }
     }
+    (None, first_val)
 }
 
 impl Transaction {

@@ -19,6 +19,10 @@ Planned features:
 - [ ] Currency conversions
 - [ ] Price/cost and FIFO
 
+## (Deliberate*) differences from beancount
+- Permitted transaction flags are limited to `*` `!` `txn`
+- Postings can't omit the currency
+
 ## Usage
 ### Install
 ```bash

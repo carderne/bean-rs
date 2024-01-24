@@ -3,6 +3,7 @@ root = { SOI ~ (NEWLINE* ~ entry ~ NEWLINE*)* ~ EOI }
 entry = _{
     heading
   | option
+  | query
   | custom
   | commodity
   | open
@@ -11,60 +12,66 @@ entry = _{
   | pad
   | price
   | document
+  | note
   | transaction
   | COMMENT
   | space+
-  | badline
+  | badline  // catch-all so parsing continues
 }
 
-heading = _{ "*" ~ anyline }
-option = { "option" ~ (space+ ~ quoted){2} }
-custom = { date ~ space ~ "custom" ~ (space+ ~ quoted){3} }
+heading        = _{ "*" ~ anyline }
+option         =  { "option" ~ (space+ ~ quoted){2} }
+custom         =  { date ~ space+ ~ "custom" ~ (space+ ~ (quoted | account | number | ccy)){2,} }
+query          =  { date ~ space+ ~ "query" ~ space+ ~ quoted ~ space+ ~ quoted }
 
-commodity =   { date ~ space+ ~ "commodity" ~ space+ ~ ccy ~ metadata_added }
-open      =   { date ~ space+ ~ "open" ~ space+ ~ account ~ currencies? ~ (space+ ~ quoted)? ~ metadata_added* }
-currencies = _{ space+ ~ ccy ~ ("," ~ space+ ~ ccy)* }
-close     =   { date ~ space+ ~ "close" ~ space+ ~ account }
+commodity      =  { date ~ space+ ~ "commodity" ~ space+ ~ ccy ~ metadata_added* }
+open           =  { date ~ space+ ~ "open" ~ space+ ~ account ~ currencies? ~ (space+ ~ quoted)? ~ metadata_added* }
+close          =  { date ~ space+ ~ "close" ~ space+ ~ account ~ metadata_added* }
+currencies     = _{ space+ ~ ccy ~ ("," ~ space+ ~ ccy)* }
 
-price   = { date ~ space+ ~ "price" ~ space+ ~ ccy ~ space+ ~ amount }
-balance = { date ~ space+ ~ "balance" ~ space+ ~ account ~ space+ ~ amount }
-pad     = { date ~ space+ ~ "pad" ~ space+ ~ account ~ space+ ~ account }
+price          =  { date ~ space+ ~ "price" ~ space+ ~ ccy ~ space+ ~ amount ~ metadata_added* }
+balance        =  { date ~ space+ ~ "balance" ~ space+ ~ account ~ space+ ~ amount ~ metadata_added* }
+pad            =  { date ~ space+ ~ "pad" ~ space+ ~ account ~ space+ ~ account ~ metadata_added* }
 
-document = { date ~ space+ ~ "document" ~ account ~ space+ ~ path }
+document       =  { date ~ space+ ~ "document" ~ account ~ space+ ~ path ~ metadata_added* }
+note           =  { date ~ space+ ~ "note" ~ space+ ~ account ~ space+ ~ quoted ~ metadata_added* }
 
-transaction   =  { date ~ space+ ~ txn_type ~ space+ ~ payee ~ (space+ ~ narration)? ~ (space+ ~ tag)? ~ (space+ ~ link)? ~ (posting_added | metadata_added)* }
-payee         =  { quoted }
-narration     =  { quoted }
-posting_added = _{ (NEWLINE ~ posting) }
-posting       =  { space+ ~ account ~ (space+ ~ amount)? }
+transaction    =  { date ~ space+ ~ txn_type ~ space+ ~ payee ~ (space* ~ narration)? ~ (space+ ~ (tag | link))* ~ (posting_added | metadata_added)* }
+payee          =  { quoted }
+narration      =  { quoted }
+tag            = @{ "#" ~ tagkey }
+link           = @{ "^" ~ tagkey }
+
+posting_added  = _{ (NEWLINE ~ posting) }
+posting        =  { space+ ~ account ~ (space+ ~ amount)? ~ space* ~ at_cost? ~ space* ~ at_price? ~ metadata_added* }
+at_cost        =  { "{" ~ (number ~ space+ ~ ccy)? ~ "}" }
+at_price       =  { "@" ~ (space+ ~ number)? ~ space+ ~ ccy }
 
 metadata_added = _{ (NEWLINE ~ metadata) }
 metadata       =  { space+ ~ key ~ ":" ~ space* ~ val }
 
-txn_type     =  { "*" | "!" | "txn" }
-key          = @{ ASCII_ALPHA_LOWER+ }
-val          = @{ quoted }
-path         = @{ quoted }
-space        = _{ " " | "\t" }
-quoted       = _{ quote ~ inner_quoted ~ quote }
-inner_quoted =  { (!quote ~ ANY)* }
-quote        = _{ "\"" }
+txn_type       =  { "*" | "!" | "txn" }
+key            = @{ ASCII_ALPHA_LOWER ~ (ASCII_ALPHANUMERIC | "-" ~ ASCII_ALPHANUMERIC)* }
+tagkey         = @{ ASCII_ALPHANUMERIC ~ (ASCII_ALPHANUMERIC | "-" ~ ASCII_ALPHANUMERIC)* }
+val            = @{ quoted | ASCII_ALPHA* }
+path           = @{ quoted }
+space          = _{ " " | "\t" }
+quoted         = _{ quote ~ inner_quoted ~ quote }
+inner_quoted   =  { (!quote ~ ANY)* }
+quote          = _{ "\"" }
 
-date  = @{ year ~ "-" ~ month ~ "-" ~ day }
-year  = @{ '1'..'2' ~ ASCII_DIGIT ~ ASCII_DIGIT ~ ASCII_DIGIT }
-month = @{ '0'..'1' ~ ASCII_DIGIT }
-day   = @{ '0'..'3' ~ ASCII_DIGIT }
+date           = @{ year ~ "-" ~ month ~ "-" ~ day }
+year           = @{ '1'..'2' ~ ASCII_DIGIT ~ ASCII_DIGIT ~ ASCII_DIGIT }
+month          = @{ '0'..'1' ~ ASCII_DIGIT }
+day            = @{ '0'..'3' ~ ASCII_DIGIT }
 
-amount = { number ~ space+ ~ ccy }
-number = @{ "-"? ~ ASCII_DIGIT ~ (ASCII_DIGIT | ".")* }
-ccy    = @{ ASCII_ALPHA_UPPER{3, 9} }
+amount         =  { number ~ space+ ~ ccy }
+number         = @{ "-"? ~ ASCII_DIGIT ~ (ASCII_DIGIT | "." | ",")* }
+ccy            = @{ ASCII_ALPHA_UPPER{3, 9} }
 
-account      = @{ account_root ~ (":" ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA_LOWER+)+ }
-account_root = _{ "Assets" | "Liabilities" | "Income" | "Expenses" | "Equity" }
+account        = @{ account_root ~ (":" ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHANUMERIC+)+ }
+account_root   = _{ "Assets" | "Liabilities" | "Income" | "Expenses" | "Equity" }
 
-tag  = @{ "#" ~ ASCII_ALPHA_LOWER+ }
-link = @{ "^" ~ ASCII_ALPHA_LOWER+ }
-
-COMMENT = _{ NEWLINE? ~ space* ~ ";" ~ anyline }
-badline =  { (!NEWLINE ~ ANY)+ }
-anyline = _{ (!NEWLINE ~ ANY)* }
+COMMENT        = _{ NEWLINE? ~ space* ~ ";" ~ anyline }
+badline        =  { (!NEWLINE ~ ANY)+ }
+anyline        = _{ (!NEWLINE ~ ANY)* }

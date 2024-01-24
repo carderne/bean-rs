@@ -55,6 +55,12 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
                     directives::ConfigCustom::from_entry(entry),
                 ));
             }
+            Rule::query => {
+                // TODO do something with queries
+                let (line, _) = entry.line_col();
+                let debug = DebugLine::new(line);
+                debug!("Ignoring query {debug}");
+            }
             Rule::commodity => {
                 dirs.push(Directive::Commodity(directives::Commodity::from_entry(
                     entry,
@@ -77,6 +83,12 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
             }
             Rule::document => {
                 dirs.push(Directive::Document(directives::Document::from_entry(entry)));
+            }
+            Rule::note => {
+                // TODO do something with notes
+                let (line, _) = entry.line_col();
+                let debug = DebugLine::new(line);
+                debug!("Ignoring note {debug}");
             }
             Rule::transaction => {
                 dirs.push(Directive::Transaction(directives::Transaction::from_entry(
