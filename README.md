@@ -2,9 +2,9 @@
 
 Basic [beancount](https://github.com/beancount/beancount) clone (one day...) in Rust!
 
-Using [pest](https://pest.rs/) for parsing. Two useful links:
-- [pest bootstrap parsing](https://github.com/pest-parser/pest/tree/master/meta/src)
-- [playground](https://pest.rs/#editor)
+Still very very alpha and doesn't do most things that are necessary to be at all useful.
+
+Using [pest](https://pest.rs/) for parsing.
 
 Planned features:
 - [x] Parse beancount files
@@ -16,11 +16,13 @@ Planned features:
 - [x] Validate `balance` directives
 - [x] Pad statements
 - [x] Open/close with multiple currencies
+- [ ] Support `includes`
+- [ ] Come up with a more punny name
 - [ ] Currency conversions
 - [ ] Price/cost and FIFO
+- [ ] Add Python bindings
 
-## (Deliberate*) differences from beancount
-- Permitted transaction flags are limited to `*` `!` `txn`
+## (Deliberate) differences from beancount
 - Postings can't omit the currency
 
 ## Usage
@@ -30,11 +32,14 @@ cargo install bean-rs
 ```
 
 ### Run
-```
+```bash
 $ bean-rs
 
+Usage: bean-rs <COMMAND>
+
 Commands:
-  balance
+  balance  Display account balances
+  check    Check for errors and quit
   help     Print this message or the help of the given subcommand(s)
 
 Options:
@@ -42,8 +47,19 @@ Options:
   -V, --version  Print version
 ```
 
+#### Calculate balances
+```bash
+bean-rs balance example.bean
+```
+
+
 ## Development
 ### Build
 ```bash
 make build
+```
+
+### Test
+```bash
+make test
 ```

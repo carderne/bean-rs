@@ -50,7 +50,7 @@ at_price       =  { "@" ~ (space+ ~ number)? ~ space+ ~ ccy }
 metadata_added = _{ (NEWLINE ~ metadata) }
 metadata       =  { space+ ~ key ~ ":" ~ space* ~ val }
 
-txn_type       =  { "*" | "!" | "txn" }
+txn_type       =  { "*" | "!" | "txn" | ASCII_ALPHA+ }
 key            = @{ ASCII_ALPHA_LOWER ~ (ASCII_ALPHANUMERIC | "-" ~ ASCII_ALPHANUMERIC)* }
 tagkey         = @{ ASCII_ALPHANUMERIC ~ (ASCII_ALPHANUMERIC | "-" ~ ASCII_ALPHANUMERIC)* }
 val            = @{ quoted | ASCII_ALPHA* }

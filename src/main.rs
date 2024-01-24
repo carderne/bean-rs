@@ -11,7 +11,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Display account balances
     Balance { path: String },
+    /// Check for errors and quit
     Check { path: String },
 }
 

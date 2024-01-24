@@ -31,7 +31,8 @@ fn load(text: String) -> (Vec<Directive>, Vec<BeanError>) {
     (dirs, errs)
 }
 
-/// Load the file at `path` and print the balance
+/// Load the file at `path`
+/// Optionally print the balance if `print_bals=true`
 pub fn balance(path: &String, print_bals: bool) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
     let (mut dirs, mut errs) = load(text);

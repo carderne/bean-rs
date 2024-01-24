@@ -512,7 +512,7 @@ pub struct Transaction {
     ty: String,
     payee: Option<String>,
     narration: String,
-    tag: Option<String>, // TODO can have multiple
+    tag: Option<String>,  // TODO can have multiple
     link: Option<String>, // TODO can have multiple
     pub postings: Vec<Posting>,
     meta: Vec<Metadata>,
