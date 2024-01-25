@@ -4,10 +4,12 @@
 
 mod book;
 mod directives;
-mod error;
+pub mod error;
 mod grammar;
 mod parser;
-mod utils;
+pub mod utils;
+
+use directives::AccBal;
 
 use crate::directives::Directive;
 use crate::error::BeanError;
@@ -31,15 +33,11 @@ fn load(text: String) -> (Vec<Directive>, Vec<BeanError>) {
     (dirs, errs)
 }
 
-/// Load the file at `path`
-/// Optionally print the balance if `print_bals=true`
-pub fn balance(path: &String, print_bals: bool) {
+/// Check and calculate balances for file at path
+pub fn balance(path: &String) -> (AccBal, Vec<BeanError>) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
     let (mut dirs, mut errs) = load(text);
     let (bals, book_errs) = book::get_balances(&mut dirs);
     errs.extend(book_errs);
-    utils::print_errors(errs);
-    if print_bals {
-        utils::print_bals(bals);
-    }
+    (bals, errs)
 }

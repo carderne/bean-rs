@@ -20,7 +20,7 @@ pub fn print_bals(bals: AccBal) {
     }
 }
 
-pub fn print_errors(errs: Vec<BeanError>) {
+pub fn print_errors(errs: &Vec<BeanError>) {
     if !errs.is_empty() {
         eprintln!("-- Errors -- ");
     }

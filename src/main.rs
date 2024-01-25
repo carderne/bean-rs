@@ -1,5 +1,11 @@
-use bean_rs::balance;
+use std::process::ExitCode;
+use std::process::Termination;
+
 use clap::{Parser, Subcommand};
+
+use bean_rs::balance;
+use bean_rs::error::BeanError;
+use bean_rs::utils;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -17,15 +23,37 @@ enum Commands {
     Check { path: String },
 }
 
-fn main() {
+#[derive(Debug)]
+struct CliError {}
+
+impl Termination for CliError {
+    fn report(self) -> ExitCode {
+        ExitCode::FAILURE
+    }
+}
+
+fn set_exit(errs: &Vec<BeanError>) -> ExitCode {
+    if errs.is_empty() {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
+}
+
+fn main() -> ExitCode {
     env_logger::init();
     let cli = Cli::parse();
     match &cli.command {
         Commands::Balance { path } => {
-            balance(path, true);
+            let (bals, errs) = balance(path);
+            utils::print_errors(&errs);
+            utils::print_bals(bals);
+            set_exit(&errs)
         }
         Commands::Check { path } => {
-            balance(path, false);
+            let (_, errs) = balance(path);
+            utils::print_errors(&errs);
+            set_exit(&errs)
         }
     }
 }
