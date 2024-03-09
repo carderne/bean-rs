@@ -719,12 +719,12 @@ impl fmt::Display for Directive {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser;
+    use crate::loader;
     #[test]
     fn test_open() {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
-        let entries = parser::parse(&text).unwrap();
-        let (dirs, _) = parser::consume(entries);
+        let entries = loader::load(&text).unwrap();
+        let (dirs, _) = loader::consume(entries);
         let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
         let a = &Open {
             date,

@@ -5,14 +5,14 @@ use pest::error::LineColLocation;
 use pest::iterators::Pairs;
 use pest::Parser;
 
-use crate::directives::Directive;
-use crate::directives::{self, DebugLine};
+use crate::data::Directive;
+use crate::data::{self, DebugLine};
 use crate::error::{BeanError, ErrorType};
 use crate::grammar::{BeanParser, Rule};
 use crate::utils;
 
 /// Parse the text using Pest
-pub fn parse(data: &str) -> Result<Pairs<'_, Rule>, BeanError> {
+pub fn load(data: &str) -> Result<Pairs<'_, Rule>, BeanError> {
     let mut entries = match BeanParser::parse(Rule::root, data) {
         Ok(pairs) => Ok(pairs),
         Err(error) => {
@@ -46,14 +46,14 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
         debug!("{:?}\t{:?}", entry.as_rule(), entry.as_span(),);
         match entry.as_rule() {
             Rule::option => {
-                dirs.push(Directive::ConfigOption(
-                    directives::ConfigOption::from_entry(entry),
-                ));
+                dirs.push(Directive::ConfigOption(data::ConfigOption::from_entry(
+                    entry,
+                )));
             }
             Rule::custom => {
-                dirs.push(Directive::ConfigCustom(
-                    directives::ConfigCustom::from_entry(entry),
-                ));
+                dirs.push(Directive::ConfigCustom(data::ConfigCustom::from_entry(
+                    entry,
+                )));
             }
             Rule::query => {
                 // TODO do something with queries
@@ -62,27 +62,25 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
                 debug!("Ignoring query {debug}");
             }
             Rule::commodity => {
-                dirs.push(Directive::Commodity(directives::Commodity::from_entry(
-                    entry,
-                )));
+                dirs.push(Directive::Commodity(data::Commodity::from_entry(entry)));
             }
             Rule::open => {
-                dirs.push(Directive::Open(directives::Open::from_entry(entry)));
+                dirs.push(Directive::Open(data::Open::from_entry(entry)));
             }
             Rule::close => {
-                dirs.push(Directive::Close(directives::Close::from_entry(entry)));
+                dirs.push(Directive::Close(data::Close::from_entry(entry)));
             }
             Rule::balance => {
-                dirs.push(Directive::Balance(directives::Balance::from_entry(entry)));
+                dirs.push(Directive::Balance(data::Balance::from_entry(entry)));
             }
             Rule::pad => {
-                dirs.push(Directive::Pad(directives::Pad::from_entry(entry)));
+                dirs.push(Directive::Pad(data::Pad::from_entry(entry)));
             }
             Rule::price => {
-                dirs.push(Directive::Price(directives::Price::from_entry(entry)));
+                dirs.push(Directive::Price(data::Price::from_entry(entry)));
             }
             Rule::document => {
-                dirs.push(Directive::Document(directives::Document::from_entry(entry)));
+                dirs.push(Directive::Document(data::Document::from_entry(entry)));
             }
             Rule::note => {
                 // TODO do something with notes
@@ -91,9 +89,7 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
                 debug!("Ignoring note {debug}");
             }
             Rule::transaction => {
-                dirs.push(Directive::Transaction(directives::Transaction::from_entry(
-                    entry,
-                )));
+                dirs.push(Directive::Transaction(data::Transaction::from_entry(entry)));
             }
             Rule::EOI => {
                 debug!("Hit EOI");
@@ -129,7 +125,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
-        let entries = parse(&text).unwrap();
+        let entries = load(&text).unwrap();
         let (dirs, _) = consume(entries);
         let got = &dirs[0];
         match got {
@@ -143,7 +139,7 @@ mod tests {
         let text = r#"
             2023-01-01 foo
         "#;
-        let entries = parse(&text).unwrap();
+        let entries = load(&text).unwrap();
         let (_, bad) = consume(entries);
         assert!(bad.len() == 1);
     }

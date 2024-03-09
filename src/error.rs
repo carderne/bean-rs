@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::directives::{DebugLine, Directive};
+use crate::data::{DebugLine, Directive};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ErrorType {

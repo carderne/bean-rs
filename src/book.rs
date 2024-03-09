@@ -4,11 +4,9 @@ use log::debug;
 use rust_decimal::Decimal;
 
 use crate::{
-    directives::{
-        AccBal, AccStatuses, Account, Amount, CcyBal, Directive, Pad, Posting, Transaction,
-    },
+    data::{AccBal, AccStatuses, Account, Amount, CcyBal, Directive, Pad, Posting, Transaction},
     error::{BeanError, ErrorType},
-    parser,
+    loader,
 };
 
 /// Checks postings with no `Amount` and calculates the values
@@ -285,6 +283,6 @@ pub fn get_balances(dirs: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
         }
     }
     dirs.extend(ptxs);
-    parser::sort(dirs);
+    loader::sort(dirs);
     (bals, errs)
 }
