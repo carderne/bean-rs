@@ -1,8 +1,9 @@
+name: pypi
+
 on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,16 +16,6 @@ jobs:
         platform:
           - runner: ubuntu-latest
             target: x86_64
-          - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
-            target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
-          - runner: ubuntu-latest
-            target: s390x
-          - runner: ubuntu-latest
-            target: ppc64le
     steps:
       - uses: actions/checkout@v4
       - name: set version
@@ -56,8 +47,6 @@ jobs:
         platform:
           - runner: windows-latest
             target: x64
-          - runner: windows-latest
-            target: x86
     steps:
       - uses: actions/checkout@v4
       - name: set version
@@ -87,8 +76,6 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: macos-latest
-            target: x86_64
           - runner: macos-14
             target: aarch64
     steps:
@@ -97,8 +84,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref }}
         run: |
-          sed -i "s/0\\.0\\.999/${RELEASE_TAG##*\/v}/" Cargo.toml
-          sed -i "s/0\\.0\\.999/${RELEASE_TAG##*\/v}/" Cargo.lock
+          sed -i '' "s/0\\.0\\.999/${RELEASE_TAG##*\/v}/" Cargo.toml
+          sed -i '' "s/0\\.0\\.999/${RELEASE_TAG##*\/v}/" Cargo.lock
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
