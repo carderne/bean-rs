@@ -2,37 +2,43 @@
 //!
 //! `bean-rs` is a [beancount](https://github.com/beancount/beancount) clone (one day...) in Rust
 
-mod book;
-mod data;
+pub mod book;
+pub mod data;
 pub mod error;
 mod grammar;
-mod loader;
+pub mod ledger;
+pub mod loader;
 pub mod utils;
 
 use pyo3::prelude::*;
 
 use data::AccBal;
 
-use crate::data::Directive;
 use crate::error::BeanError;
+use crate::ledger::Ledger;
 
 /// Loads the provided text into a Vec of Directives
 /// containing opens, closes, transactions etc
-pub fn load(text: String) -> (Vec<Directive>, Vec<BeanError>) {
+pub fn load(text: String) -> Ledger {
     let entries = loader::load(&text);
-    let (dirs, errs) = loader::consume(entries);
-    let mut dirs = dirs;
+    let ledger = loader::consume(entries);
+    let mut dirs = ledger.dirs;
     loader::sort(&mut dirs);
     book::balance_transactions(&mut dirs);
     utils::debug_directives(&dirs);
-    (dirs, errs)
+    Ledger {
+        dirs,
+        errs: ledger.errs,
+        opts: ledger.opts,
+    }
 }
 
 /// Check and calculate balances for file at path
-pub fn balance(path: &String) -> (AccBal, Vec<BeanError>) {
+pub fn balance(path: &str) -> (AccBal, Vec<BeanError>) {
     let text = std::fs::read_to_string(path).expect("cannot read file");
-    let (mut dirs, mut errs) = load(text);
-    let (bals, book_errs) = book::get_balances(&mut dirs);
+    let mut ledger = load(text);
+    let (bals, book_errs) = book::get_balances(&mut ledger.dirs);
+    let mut errs = ledger.errs;
     errs.extend(book_errs);
     (bals, errs)
 }
@@ -40,7 +46,7 @@ pub fn balance(path: &String) -> (AccBal, Vec<BeanError>) {
 /// Formats the sum of two numbers as string.
 #[pyfunction]
 fn py_balance(path: &str) -> PyResult<String> {
-    balance(&path.to_string());
+    balance(path);
     Ok("Ok".to_string())
 }
 

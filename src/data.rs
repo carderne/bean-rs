@@ -19,6 +19,33 @@ pub type CcyBal = HashMap<Ccy, Decimal>;
 pub type AccBal = HashMap<Account, CcyBal>;
 pub type AccStatuses = HashMap<Account, (bool, Vec<Ccy>)>;
 
+pub struct Options {
+    pub title: String,
+    pub operating_currency: String,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            title: "".to_string(),
+            operating_currency: "".to_string(),
+        }
+    }
+}
+
+impl Options {
+    pub fn update_from_entry(&mut self, entry: Pair<Rule>) {
+        let mut pairs = entry.clone().into_inner();
+        let key = pairs.next().unwrap().as_str();
+        let val = pairs.next().unwrap().as_str().to_string();
+        match key {
+            "title" => self.title = val,
+            "operating_currency" => self.operating_currency = val,
+            _ => panic!("Other options not handled yet"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct DebugLine {
     pub line: usize,
@@ -102,37 +129,6 @@ impl ConfigCustom {
 impl fmt::Display for ConfigCustom {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "-- ignore custom")
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct ConfigOption {
-    pub date: NaiveDate,
-    pub key: String,
-    pub val: String,
-    pub debug: DebugLine,
-}
-
-impl ConfigOption {
-    pub fn from_entry(entry: Pair<Rule>) -> Self {
-        let mut pairs = entry.clone().into_inner();
-        let key = pairs.next().unwrap().as_str().to_string();
-        let val = pairs.next().unwrap().as_str().to_string();
-        let (line, _) = entry.line_col();
-        let debug = DebugLine { line };
-        let date = NaiveDate::parse_from_str(BASE_DATE, DATE_FMT).unwrap();
-        Self {
-            date,
-            key,
-            val,
-            debug,
-        }
-    }
-}
-
-impl fmt::Display for ConfigOption {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{key} {val}", key = self.key, val = self.val,)
     }
 }
 
@@ -459,7 +455,6 @@ impl fmt::Display for Document {
     }
 }
 
-
 #[derive(Debug, PartialEq)]
 pub struct Note {
     pub date: NaiveDate,
@@ -737,7 +732,6 @@ impl fmt::Display for Transaction {
 #[derive(Debug)]
 pub enum Directive {
     ConfigCustom(ConfigCustom),
-    ConfigOption(ConfigOption),
     Commodity(Commodity),
     Open(Open),
     Close(Close),
@@ -754,7 +748,6 @@ impl Directive {
     pub fn date(&self) -> &NaiveDate {
         match self {
             Directive::ConfigCustom(d) => &d.date,
-            Directive::ConfigOption(d) => &d.date,
             Directive::Commodity(d) => &d.date,
             Directive::Open(d) => &d.date,
             Directive::Close(d) => &d.date,
@@ -774,7 +767,6 @@ impl Directive {
             Directive::Open(_) => -2,
             Directive::Balance(_) => -1,
             Directive::ConfigCustom(_) => 0,
-            Directive::ConfigOption(_) => 0,
             Directive::Commodity(_) => 0,
             Directive::Pad(_) => 0,
             Directive::Price(_) => 0,
@@ -791,7 +783,6 @@ impl fmt::Display for Directive {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Directive::ConfigCustom(d) => write!(f, "{d}"),
-            Directive::ConfigOption(d) => write!(f, "{d}"),
             Directive::Commodity(d) => write!(f, "{d}"),
             Directive::Open(d) => write!(f, "{d}"),
             Directive::Close(d) => write!(f, "{d}"),
@@ -809,13 +800,17 @@ impl fmt::Display for Directive {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::loader;
+    use crate::{ledger::Ledger, loader};
 
     #[test]
     fn test_open() {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
         let entries = loader::load(&text);
-        let (dirs, _) = loader::consume(entries);
+        let Ledger {
+            dirs,
+            errs: _,
+            opts: _,
+        } = loader::consume(entries);
         let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
         let a = &Open {
             date,

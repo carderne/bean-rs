@@ -18,7 +18,7 @@ rust_decimal = "1.33.1"
 
 [lib]
 name = "bean_rs"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 
 [[bin]]
 name = "bean-rs"

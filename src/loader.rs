@@ -4,10 +4,11 @@ use log::debug;
 use pest::iterators::Pairs;
 use pest::Parser;
 
-use crate::data::Directive;
 use crate::data::{self, DebugLine};
+use crate::data::{Directive, Options};
 use crate::error::{BeanError, ErrorType};
 use crate::grammar::{BeanParser, Rule};
+use crate::ledger::Ledger;
 use crate::utils;
 
 /// Parse the text using Pest
@@ -23,16 +24,15 @@ pub fn load(data: &str) -> Pairs<'_, Rule> {
 }
 
 /// Convert the AST Pest Pairs into a Vec of Directives
-pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
+pub fn consume(entries: Pairs<'_, Rule>) -> Ledger {
     let mut errs: Vec<BeanError> = Vec::with_capacity(entries.len());
     let mut dirs: Vec<Directive> = Vec::new();
+    let mut opts = Options::default();
     for entry in entries {
         debug!("{:?}\t{:?}", entry.as_rule(), entry.as_span(),);
         match entry.as_rule() {
             Rule::option => {
-                dirs.push(Directive::ConfigOption(data::ConfigOption::from_entry(
-                    entry,
-                )));
+                opts.update_from_entry(entry);
             }
             Rule::custom => {
                 dirs.push(Directive::ConfigCustom(data::ConfigCustom::from_entry(
@@ -86,7 +86,7 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
             }
         };
     }
-    (dirs, errs)
+    Ledger { dirs, errs, opts }
 }
 
 /// Sort the Directives by date and `order` inplace
@@ -104,7 +104,11 @@ mod tests {
     fn test_parse() {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
         let entries = load(&text);
-        let (dirs, _) = consume(entries);
+        let Ledger {
+            dirs,
+            errs: _,
+            opts: _,
+        } = consume(entries);
         let got = &dirs[0];
         match got {
             Directive::Open(_) => (),
@@ -118,8 +122,12 @@ mod tests {
             2023-01-01 foo
         "#;
         let entries = load(&text);
-        let (_, bad) = consume(entries);
-        assert!(bad.len() == 1);
+        let Ledger {
+            dirs: _,
+            errs,
+            opts: _,
+        } = consume(entries);
+        assert!(errs.len() == 1);
     }
 
     #[test]

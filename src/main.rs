@@ -3,6 +3,7 @@ use std::process::Termination;
 
 use clap::{Parser, Subcommand};
 
+// extern crate bean_rs;
 use bean_rs::balance;
 use bean_rs::error::BeanError;
 use bean_rs::utils;
