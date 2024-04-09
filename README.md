@@ -6,10 +6,12 @@ Still very very alpha and doesn't do most things that are necessary to be at all
 
 Python bindings are a WIP using [PyO3](https://pyo3.rs);
 
-Using [pest](https://pest.rs/) for parsing.
+The libraries:
+- [crates/bean-rs](https://crates.io/crates/bean-rs)
+- [pypi/bean-rs](https://pypi.org/project/bean-rs/)
 
 Planned features:
-- [x] Parse beancount files
+- [x] Parse beancount files using [pest](https://pest.rs/)
 - [x] Stricter transaction keywords
 - [x] Propagate line numbers for debugging
 - [x] Calculate account balances
