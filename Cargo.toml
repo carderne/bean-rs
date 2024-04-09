@@ -3,7 +3,7 @@ name = "bean-rs"
 license = "MIT"
 authors = ["Chris Arderne <chris@rdrn.me"]
 description = "beancount clone in Rust"
-version = "0.0.0-git"  # set by Github Actions CICD
+version = "0.0.1"  # set by Github Actions CI
 edition = "2021"
 
 [dependencies]
@@ -13,7 +13,12 @@ env_logger = "0.11.0"
 log = "0.4.20"
 pest = "2.7.6"
 pest_derive = "2.7.6"
+pyo3 = "0.20.0"
 rust_decimal = "1.33.1"
+
+[lib]
+name = "bean_rs"
+crate-type = ["cdylib"]
 
 [[bin]]
 name = "bean-rs"

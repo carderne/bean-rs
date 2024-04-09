@@ -4,6 +4,8 @@ Basic [beancount](https://github.com/beancount/beancount) clone (one day...) in 
 
 Still very very alpha and doesn't do most things that are necessary to be at all useful.
 
+Python bindings are a WIP using [PyO3](https://pyo3.rs);
+
 Using [pest](https://pest.rs/) for parsing.
 
 Planned features:
@@ -16,11 +18,11 @@ Planned features:
 - [x] Validate `balance` directives
 - [x] Pad statements
 - [x] Open/close with multiple currencies
+- [ ] Add Python bindings
 - [ ] Support `includes`
 - [ ] Come up with a more punny name
 - [ ] Currency conversions
 - [ ] Price/cost and FIFO
-- [ ] Add Python bindings
 
 ## (Deliberate) differences from beancount
 - Postings can't omit the currency

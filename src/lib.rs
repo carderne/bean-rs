@@ -9,6 +9,8 @@ mod grammar;
 mod loader;
 pub mod utils;
 
+use pyo3::prelude::*;
+
 use data::AccBal;
 
 use crate::data::Directive;
@@ -33,4 +35,18 @@ pub fn balance(path: &String) -> (AccBal, Vec<BeanError>) {
     let (bals, book_errs) = book::get_balances(&mut dirs);
     errs.extend(book_errs);
     (bals, errs)
+}
+
+/// Formats the sum of two numbers as string.
+#[pyfunction]
+fn py_balance(path: &str) -> PyResult<String> {
+    balance(&path.to_string());
+    Ok("Ok".to_string())
+}
+
+/// A Python module implemented in Rust.
+#[pymodule]
+fn bean_rs(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(py_balance, m)?)?;
+    Ok(())
 }
