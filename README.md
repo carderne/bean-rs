@@ -18,7 +18,7 @@ Planned features:
 - [x] Validate `balance` directives
 - [x] Pad statements
 - [x] Open/close with multiple currencies
-- [ ] Add Python bindings
+- [x] Add Python bindings
 - [ ] Support `includes`
 - [ ] Come up with a more punny name
 - [ ] Currency conversions
@@ -27,7 +27,7 @@ Planned features:
 ## (Deliberate) differences from beancount
 - Postings can't omit the currency
 
-## Usage
+## Use from Rust
 ### Install
 ```bash
 cargo install bean-rs
@@ -54,6 +54,13 @@ Options:
 bean-rs balance example.bean
 ```
 
+## Use from Python
+More to come...
+```python
+import bean_rs
+ledger = bean_rs.py_load("example.bean")
+print(ledger.opts)
+```
 
 ## Development
 ### Build

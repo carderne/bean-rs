@@ -43,16 +43,16 @@ pub fn balance(path: &str) -> (AccBal, Vec<BeanError>) {
     (bals, errs)
 }
 
-/// Formats the sum of two numbers as string.
+/// Load the ledger from Python
 #[pyfunction]
-fn py_balance(path: &str) -> PyResult<String> {
-    balance(path);
-    Ok("Ok".to_string())
+fn py_load(path: &str) -> Ledger {
+    let text = std::fs::read_to_string(path).expect("cannot read file");
+    load(text)
 }
 
-/// A Python module implemented in Rust.
+/// `bean_rs` importable from Python
 #[pymodule]
-fn bean_rs(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(py_balance, m)?)?;
+fn bean_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(py_load, m)?)?;
     Ok(())
 }

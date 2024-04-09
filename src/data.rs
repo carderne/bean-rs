@@ -5,6 +5,7 @@ use std::fmt;
 
 use chrono::NaiveDate;
 use pest::iterators::{Pair, Pairs};
+use pyo3::pyclass;
 use rust_decimal::Decimal;
 
 use crate::grammar::Rule;
@@ -19,8 +20,12 @@ pub type CcyBal = HashMap<Ccy, Decimal>;
 pub type AccBal = HashMap<Account, CcyBal>;
 pub type AccStatuses = HashMap<Account, (bool, Vec<Ccy>)>;
 
+#[pyclass]
+#[derive(Clone, Debug)]
 pub struct Options {
+    #[pyo3(get)]
     pub title: String,
+    #[pyo3(get)]
     pub operating_currency: String,
 }
 
@@ -111,7 +116,7 @@ impl Amount {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ConfigCustom {
     pub date: NaiveDate,
     pub debug: DebugLine,
@@ -156,7 +161,7 @@ impl fmt::Display for Metadata {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Commodity {
     pub date: NaiveDate,
     pub ccy: String,
@@ -376,7 +381,7 @@ impl fmt::Display for Pad {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Price {
     pub date: NaiveDate,
     pub commodity: String,
@@ -416,7 +421,7 @@ impl fmt::Display for Price {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Document {
     pub date: NaiveDate,
     pub account: Account,
@@ -455,7 +460,7 @@ impl fmt::Display for Document {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Note {
     pub date: NaiveDate,
     pub account: Account,
@@ -494,7 +499,7 @@ impl fmt::Display for Note {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Query {
     pub date: NaiveDate,
     pub name: String,
@@ -729,7 +734,7 @@ impl fmt::Display for Transaction {
 
 /// The "ledger" is made up of Directives
 /// Most operations will be done by looping through a Vec of these
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Directive {
     ConfigCustom(ConfigCustom),
     Commodity(Commodity),
