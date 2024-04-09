@@ -50,6 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set version
+        shell: bash
         env:
           RELEASE_TAG: ${{ github.ref }}
         run: |
