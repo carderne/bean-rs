@@ -10,7 +10,7 @@ use rust_decimal::Decimal;
 use crate::grammar::Rule;
 
 const BASE_DATE: &str = "0001-01-01";
-const DATE_FMT: &str = "%Y-%m-%d";
+pub const DATE_FMT: &str = "%Y-%m-%d";
 
 type Ccy = String;
 pub type Account = String;
@@ -86,8 +86,8 @@ impl Amount {
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigCustom {
-    date: NaiveDate,
-    debug: DebugLine,
+    pub date: NaiveDate,
+    pub debug: DebugLine,
 }
 
 impl ConfigCustom {
@@ -107,10 +107,10 @@ impl fmt::Display for ConfigCustom {
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigOption {
-    date: NaiveDate,
-    key: String,
-    val: String,
-    debug: DebugLine,
+    pub date: NaiveDate,
+    pub key: String,
+    pub val: String,
+    pub debug: DebugLine,
 }
 
 impl ConfigOption {
@@ -138,10 +138,9 @@ impl fmt::Display for ConfigOption {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Metadata {
-    key: String,
-    val: String,
-    debug: DebugLine,
-    // TODO: parse metadata in all directives
+    pub key: String,
+    pub val: String,
+    pub debug: DebugLine,
 }
 
 impl Metadata {
@@ -163,10 +162,10 @@ impl fmt::Display for Metadata {
 
 #[derive(Debug, PartialEq)]
 pub struct Commodity {
-    date: NaiveDate,
-    ccy: String,
-    meta: Vec<Metadata>,
-    debug: DebugLine,
+    pub date: NaiveDate,
+    pub ccy: String,
+    pub meta: Vec<Metadata>,
+    pub debug: DebugLine,
 }
 
 impl Commodity {
@@ -213,10 +212,10 @@ impl fmt::Display for Commodity {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Open {
-    date: NaiveDate,
+    pub date: NaiveDate,
     pub account: Account,
     pub ccys: Vec<Ccy>,
-    meta: Vec<Metadata>,
+    pub meta: Vec<Metadata>,
     pub debug: DebugLine,
 }
 
@@ -269,8 +268,9 @@ impl fmt::Display for Open {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Close {
-    date: NaiveDate,
+    pub date: NaiveDate,
     pub account: Account,
+    // TODO can also have Meta
     pub debug: DebugLine,
 }
 
@@ -303,9 +303,10 @@ impl fmt::Display for Close {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Balance {
-    date: NaiveDate,
+    pub date: NaiveDate,
     pub account: Account,
     pub amount: Amount,
+    // TODO can also have Meta
     pub debug: DebugLine,
 }
 
@@ -342,9 +343,10 @@ impl fmt::Display for Balance {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pad {
-    date: NaiveDate,
+    pub date: NaiveDate,
     pub account_to: Account,
-    account_from: Account,
+    pub account_from: Account,
+    // TODO can also have Meta
     pub debug: DebugLine,
 }
 
@@ -380,10 +382,11 @@ impl fmt::Display for Pad {
 
 #[derive(Debug, PartialEq)]
 pub struct Price {
-    date: NaiveDate,
-    commodity: String,
-    amount: Amount,
-    debug: DebugLine,
+    pub date: NaiveDate,
+    pub commodity: String,
+    pub amount: Amount,
+    // TODO can also have Meta
+    pub debug: DebugLine,
 }
 
 impl Price {
@@ -419,10 +422,11 @@ impl fmt::Display for Price {
 
 #[derive(Debug, PartialEq)]
 pub struct Document {
-    date: NaiveDate,
-    account: Account,
-    path: String,
-    debug: DebugLine,
+    pub date: NaiveDate,
+    pub account: Account,
+    pub path: String,
+    // TODO can also have Meta
+    pub debug: DebugLine,
 }
 
 impl Document {
@@ -447,10 +451,88 @@ impl fmt::Display for Document {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{date} documenet {account} {path}",
+            "{date} document {account} {path}",
             date = self.date,
             account = self.account,
             path = self.path,
+        )
+    }
+}
+
+
+#[derive(Debug, PartialEq)]
+pub struct Note {
+    pub date: NaiveDate,
+    pub account: Account,
+    pub note: String,
+    // TODO can also have Meta
+    pub debug: DebugLine,
+}
+
+impl Note {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
+        let mut pairs = entry.clone().into_inner();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
+        let account = pairs.next().unwrap().as_str().to_string();
+        let note = pairs.next().unwrap().as_str().to_string();
+        let (line, _) = entry.line_col();
+        let debug = DebugLine { line };
+        Self {
+            date,
+            account,
+            note,
+            debug,
+        }
+    }
+}
+
+impl fmt::Display for Note {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{date} note {account} {note}",
+            date = self.date,
+            account = self.account,
+            note = self.note,
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Query {
+    pub date: NaiveDate,
+    pub name: String,
+    pub query: String,
+    pub debug: DebugLine,
+}
+
+impl Query {
+    pub fn from_entry(entry: Pair<Rule>) -> Self {
+        let mut pairs = entry.clone().into_inner();
+        let date = pairs.next().unwrap().as_str();
+        let date = NaiveDate::parse_from_str(date, DATE_FMT).unwrap();
+        let name = pairs.next().unwrap().as_str().to_string();
+        let query = pairs.next().unwrap().as_str().to_string();
+        let (line, _) = entry.line_col();
+        let debug = DebugLine { line };
+        Self {
+            date,
+            name,
+            query,
+            debug,
+        }
+    }
+}
+
+impl fmt::Display for Query {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{date} query {name} {query}",
+            date = self.date,
+            name = self.name,
+            query = self.query,
         )
     }
 }
@@ -459,7 +541,7 @@ impl fmt::Display for Document {
 pub struct Posting {
     pub account: Account,
     pub amount: Option<Amount>,
-    debug: Option<DebugLine>,
+    pub debug: Option<DebugLine>,
 }
 
 impl Posting {
@@ -508,14 +590,14 @@ impl fmt::Display for Posting {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
-    date: NaiveDate,
-    ty: String,
-    payee: Option<String>,
-    narration: String,
-    tag: Option<String>,  // TODO can have multiple
-    link: Option<String>, // TODO can have multiple
+    pub date: NaiveDate,
+    pub ty: String,
+    pub payee: Option<String>,
+    pub narration: String,
+    pub tag: Option<String>,  // TODO can have multiple
+    pub link: Option<String>, // TODO can have multiple
     pub postings: Vec<Posting>,
-    meta: Vec<Metadata>,
+    pub meta: Vec<Metadata>,
     pub debug: DebugLine,
     // TODO add at_cost, at_price
 }
@@ -663,6 +745,8 @@ pub enum Directive {
     Pad(Pad),
     Price(Price),
     Document(Document),
+    Note(Note),
+    Query(Query),
     Transaction(Transaction),
 }
 
@@ -678,6 +762,8 @@ impl Directive {
             Directive::Pad(d) => &d.date,
             Directive::Price(d) => &d.date,
             Directive::Document(d) => &d.date,
+            Directive::Note(d) => &d.date,
+            Directive::Query(d) => &d.date,
             Directive::Transaction(d) => &d.date,
         }
     }
@@ -694,6 +780,8 @@ impl Directive {
             Directive::Price(_) => 0,
             Directive::Transaction(_) => 0,
             Directive::Document(_) => 1,
+            Directive::Note(_) => 1,
+            Directive::Query(_) => 1,
             Directive::Close(_) => 2,
         }
     }
@@ -711,6 +799,8 @@ impl fmt::Display for Directive {
             Directive::Pad(d) => write!(f, "{d}"),
             Directive::Price(d) => write!(f, "{d}"),
             Directive::Document(d) => write!(f, "{d}"),
+            Directive::Note(d) => write!(f, "{d}"),
+            Directive::Query(d) => write!(f, "{d}"),
             Directive::Transaction(d) => write!(f, "{d}"),
         }
     }
@@ -720,10 +810,11 @@ impl fmt::Display for Directive {
 mod tests {
     use super::*;
     use crate::loader;
+
     #[test]
     fn test_open() {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
-        let entries = loader::load(&text).unwrap();
+        let entries = loader::load(&text);
         let (dirs, _) = loader::consume(entries);
         let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
         let a = &Open {
@@ -740,5 +831,16 @@ mod tests {
             }
             _ => assert!(false, "Found wrong directive type"),
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_bad_amount() {
+        let text = r#"
+            2023-01-01 price FOO 1,.0.0 BAR
+        "#;
+        let mut entries = loader::load(&text);
+        let entry = entries.next().unwrap();
+        Price::from_entry(entry);
     }
 }

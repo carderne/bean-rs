@@ -11,6 +11,12 @@ pub fn debug_directives(directives: &Vec<Directive>) {
     }
 }
 
+pub fn print_directives(directives: &Vec<Directive>) {
+    for d in directives {
+        println!("{d}")
+    }
+}
+
 pub fn print_bals(bals: AccBal) {
     println!("-- Balances --");
     for (acc, ccy_bals) in bals {
@@ -54,10 +60,54 @@ pub fn debug_pair(pair: &Pair<Rule>, depth: usize) {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
+    use chrono::NaiveDate;
+    use rust_decimal::Decimal;
+
+    use crate::{
+        data::{CcyBal, Commodity, DebugLine},
+        error::ErrorType,
+    };
+
     use super::*;
+
     #[test]
     fn useless_debug_directives() {
-        let vec = Vec::new();
+        let comm = Commodity {
+            date: NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(),
+            ccy: "USD".to_string(),
+            meta: vec![],
+            debug: DebugLine { line: 0 },
+        };
+        let vec = vec![Directive::Commodity(comm)];
         debug_directives(&vec)
+    }
+
+    #[test]
+    fn test_print_bals() {
+        let mut bals: AccBal = HashMap::new();
+        let mut ccybal: CcyBal = HashMap::new();
+        ccybal.insert("USD".to_string(), Decimal::new(100, 1));
+        bals.insert("Assets:Checking".to_string(), ccybal);
+        print_bals(bals);
+    }
+
+    #[test]
+    fn test_print_errors() {
+        let comm = Commodity {
+            date: NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(),
+            ccy: "USD".to_string(),
+            meta: vec![],
+            debug: DebugLine { line: 0 },
+        };
+        let err = BeanError::new(
+            ErrorType::Badline,
+            &DebugLine { line: 0 },
+            "",
+            Some(&Directive::Commodity(comm)),
+        );
+        let errs = vec![err];
+        print_errors(&errs);
     }
 }

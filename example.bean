@@ -3,16 +3,19 @@
 ** Random metadata stuff
 option "operating_currency" "GBP"
 2000-01-01 custom "fava-option" "language" "en"
-2000-01-01 commodity GBP
+2000-01-02 commodity GBP
   name: "British Pound"
+
+** Prices
+2022-01-01 price GOOG                    50 GBP
 
 ** Open accounts
 2023-01-01 open Equity:Bals
-2023-01-01 open Assets:Bank                 GBP
-2023-01-02 open Assets:Invest               GOO  "FIFO"
+2023-01-02 open Assets:Bank                 GBP
+2023-01-03 open Assets:Invest               GOO  "FIFO"
   portfolio: "all"
-2023-01-03 open Expenses:Food               GBP, USD
-2023-01-04 open Income:Job                  GBP
+2023-01-04 open Expenses:Food               GBP, USD
+2023-01-05 open Income:Job                  GBP
 
 ** Transactions
 2023-02-01 * "Salary" ; comment
@@ -25,7 +28,7 @@ option "operating_currency" "GBP"
   ; comment
   Expenses:Food                         100 GBP
 
-2023-02-05 * "Shop" "More food" #tag ^link
+2023-02-03 * "Shop" "More food" #tag ^link
   Assets:Bank                        -40.00 GBP
   Expenses:Food                       40.00 USD
 
@@ -34,8 +37,10 @@ option "operating_currency" "GBP"
 2023-03-02 balance Assets:Invest        111 GOO
 2023-03-03 balance Assets:Bank          860 GBP
 
-** Close an account
-2023-12-01 close Assets:Bank
+** Other
+2023-04-01 document Assets:Bank "./doc.pdf"
+2023-04-02 note Assets:Bank "a note"
+2023-04-03 query "name" "a bad query"
 
-** Prices
-2023-01-01 price GOOG                    50 GBP
+** Close an account
+2023-05-01 close Assets:Bank

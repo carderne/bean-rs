@@ -33,7 +33,7 @@ price          =  { date ~ space+ ~ "price" ~ space+ ~ ccy ~ space+ ~ amount ~ m
 balance        =  { date ~ space+ ~ "balance" ~ space+ ~ account ~ space+ ~ amount ~ metadata_added* }
 pad            =  { date ~ space+ ~ "pad" ~ space+ ~ account ~ space+ ~ account ~ metadata_added* }
 
-document       =  { date ~ space+ ~ "document" ~ account ~ space+ ~ path ~ metadata_added* }
+document       =  { date ~ space+ ~ "document" ~ space+ ~ account ~ space+ ~ path ~ metadata_added* }
 note           =  { date ~ space+ ~ "note" ~ space+ ~ account ~ space+ ~ quoted ~ metadata_added* }
 
 transaction    =  { date ~ space+ ~ txn_type ~ space+ ~ payee ~ (space* ~ narration)? ~ (space+ ~ (tag | link))* ~ (posting_added | metadata_added)* }

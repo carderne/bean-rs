@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
 use log::debug;
-use pest::error::LineColLocation;
 use pest::iterators::Pairs;
 use pest::Parser;
 
@@ -12,33 +11,18 @@ use crate::grammar::{BeanParser, Rule};
 use crate::utils;
 
 /// Parse the text using Pest
-pub fn load(data: &str) -> Result<Pairs<'_, Rule>, BeanError> {
-    let mut entries = match BeanParser::parse(Rule::root, data) {
-        Ok(pairs) => Ok(pairs),
-        Err(error) => {
-            let (line, _) = match error.line_col {
-                LineColLocation::Pos(pos) => pos,
-                LineColLocation::Span(pos, _) => pos,
-            };
-            let debug = DebugLine::new(line);
-            let err = BeanError::new(ErrorType::Parse, &debug, "Parsing error", None);
-            Err(err)
-        }
-    }?;
-    match entries.next() {
-        Some(entry) => {
-            utils::debug_pair(&entry, 0);
-            Ok(entry.into_inner())
-        }
-        None => {
-            let debug = DebugLine::default();
-            let err = BeanError::new(ErrorType::Into, &debug, "Parsing error", None);
-            Err(err)
-        }
-    }
+pub fn load(data: &str) -> Pairs<'_, Rule> {
+    // The grammer has a badline option which will consume any nonsense
+    // So in theory this shouldn't error!
+    let mut entries = BeanParser::parse(Rule::root, data).unwrap();
+
+    // There will always be at least an `EOI`, so this will also never error
+    let entry = entries.next().unwrap();
+    utils::debug_pair(&entry, 0);
+    entry.into_inner()
 }
 
-// Convert the AST Pest Pairs into a Vec of Directives
+/// Convert the AST Pest Pairs into a Vec of Directives
 pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
     let mut errs: Vec<BeanError> = Vec::with_capacity(entries.len());
     let mut dirs: Vec<Directive> = Vec::new();
@@ -56,10 +40,7 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
                 )));
             }
             Rule::query => {
-                // TODO do something with queries
-                let (line, _) = entry.line_col();
-                let debug = DebugLine::new(line);
-                debug!("Ignoring query {debug}");
+                dirs.push(Directive::Query(data::Query::from_entry(entry)));
             }
             Rule::commodity => {
                 dirs.push(Directive::Commodity(data::Commodity::from_entry(entry)));
@@ -83,10 +64,7 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
                 dirs.push(Directive::Document(data::Document::from_entry(entry)));
             }
             Rule::note => {
-                // TODO do something with notes
-                let (line, _) = entry.line_col();
-                let debug = DebugLine::new(line);
-                debug!("Ignoring note {debug}");
+                dirs.push(Directive::Note(data::Note::from_entry(entry)));
             }
             Rule::transaction => {
                 dirs.push(Directive::Transaction(data::Transaction::from_entry(entry)));
@@ -102,8 +80,8 @@ pub fn consume(entries: Pairs<'_, Rule>) -> (Vec<Directive>, Vec<BeanError>) {
                 errs.push(err);
             }
             _ => {
-                let (line, _) = entry.line_col();
-                let debug = DebugLine::new(line);
+                let (l, _) = entry.line_col();
+                let debug = DebugLine::new(l);
                 unreachable!("Found unexpected entry in file, abort.\n{debug}");
             }
         };
@@ -125,7 +103,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let text = r#"2023-01-01 open Assets:Bank GBP"#;
-        let entries = load(&text).unwrap();
+        let entries = load(&text);
         let (dirs, _) = consume(entries);
         let got = &dirs[0];
         match got {
@@ -135,12 +113,21 @@ mod tests {
     }
 
     #[test]
-    fn test_bad() {
+    fn test_bad_consume() {
         let text = r#"
             2023-01-01 foo
         "#;
-        let entries = load(&text).unwrap();
+        let entries = load(&text);
         let (_, bad) = consume(entries);
         assert!(bad.len() == 1);
+    }
+
+    #[test]
+    fn test_consume() {
+        let text = r#"
+            option "operating_currency" "GBP"
+        "#;
+        let entries = load(&text);
+        consume(entries);
     }
 }

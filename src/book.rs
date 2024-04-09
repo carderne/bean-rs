@@ -286,3 +286,102 @@ pub fn get_balances(dirs: &mut Vec<Directive>) -> (AccBal, Vec<BeanError>) {
     loader::sort(dirs);
     (bals, errs)
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::NaiveDate;
+
+    use crate::data::{DebugLine, DATE_FMT};
+
+    use super::*;
+
+    #[test]
+    fn test_bad_transaction() {
+        let p1 = Posting {
+            account: "Assets:Bank".to_string(),
+            amount: None,
+            debug: None,
+        };
+        let p2 = p1.clone();
+        let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
+        let mut tx = Transaction {
+            date,
+            ty: "*".to_string(),
+            payee: None,
+            narration: "".to_string(),
+            tag: None,
+            link: None,
+            postings: vec![p1, p2],
+            meta: vec![],
+            debug: DebugLine { line: 0 },
+        };
+        let errs = complete_postings(&mut tx);
+        assert!(errs.first().unwrap().ty == ErrorType::MultipleEmptyPostings);
+    }
+
+    #[test]
+    fn test_bad_ccy() {
+        let p1 = Posting {
+            account: "Assets:Bank".to_string(),
+            amount: Some(Amount::new(Decimal::new(100, 1), "USD".to_string())),
+            debug: None,
+        };
+        let p2 = Posting {
+            account: "Income:Job".to_string(),
+            amount: Some(Amount::new(Decimal::new(-100, 1), "USD".to_string())),
+            debug: None,
+        };
+        let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
+        let tx = Transaction {
+            date,
+            ty: "*".to_string(),
+            payee: None,
+            narration: "".to_string(),
+            tag: None,
+            link: None,
+            postings: vec![p1, p2],
+            meta: vec![],
+            debug: DebugLine { line: 0 },
+        };
+        let mut bals: AccBal = HashMap::new();
+        let mut accs: AccStatuses = HashMap::new();
+        accs.insert("Assets:Bank".to_string(), (true, vec!["FOO".to_string()]));
+        accs.insert("Income:Job".to_string(), (true, vec!["FOO".to_string()]));
+        let mut errs: Vec<BeanError> = vec![];
+        proc_tx(&tx, &mut bals, &mut accs, &mut errs);
+        assert!(errs.first().unwrap().ty == ErrorType::InvalidCcy);
+    }
+
+    #[test]
+    fn test_closed_acc() {
+        let p1 = Posting {
+            account: "Assets:Bank".to_string(),
+            amount: Some(Amount::new(Decimal::new(100, 1), "USD".to_string())),
+            debug: None,
+        };
+        let p2 = Posting {
+            account: "Income:Job".to_string(),
+            amount: Some(Amount::new(Decimal::new(-100, 1), "USD".to_string())),
+            debug: None,
+        };
+        let date = NaiveDate::parse_from_str("2023-01-01", DATE_FMT).unwrap();
+        let tx = Transaction {
+            date,
+            ty: "*".to_string(),
+            payee: None,
+            narration: "".to_string(),
+            tag: None,
+            link: None,
+            postings: vec![p1, p2],
+            meta: vec![],
+            debug: DebugLine { line: 0 },
+        };
+        let mut bals: AccBal = HashMap::new();
+        let mut accs: AccStatuses = HashMap::new();
+        accs.insert("Assets:Bank".to_string(), (false, vec!["USD".to_string()]));
+        accs.insert("Income:Job".to_string(), (false, vec!["USD".to_string()]));
+        let mut errs: Vec<BeanError> = vec![];
+        proc_tx(&tx, &mut bals, &mut accs, &mut errs);
+        assert!(errs.first().unwrap().ty == ErrorType::ClosedAccount);
+    }
+}

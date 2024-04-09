@@ -16,15 +16,8 @@ use crate::error::BeanError;
 
 /// Loads the provided text into a Vec of Directives
 /// containing opens, closes, transactions etc
-fn load(text: String) -> (Vec<Directive>, Vec<BeanError>) {
+pub fn load(text: String) -> (Vec<Directive>, Vec<BeanError>) {
     let entries = loader::load(&text);
-    let entries = match entries {
-        Ok(entries) => entries,
-        Err(error) => {
-            let empty_dirs: Vec<Directive> = Vec::new();
-            return (empty_dirs, vec![error]);
-        }
-    };
     let (dirs, errs) = loader::consume(entries);
     let mut dirs = dirs;
     loader::sort(&mut dirs);

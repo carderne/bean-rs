@@ -32,7 +32,7 @@ impl Termination for CliError {
     }
 }
 
-fn set_exit(errs: &Vec<BeanError>) -> ExitCode {
+fn set_exit(errs: &[BeanError]) -> ExitCode {
     if errs.is_empty() {
         ExitCode::SUCCESS
     } else {

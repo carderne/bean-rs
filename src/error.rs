@@ -4,8 +4,6 @@ use crate::data::{DebugLine, Directive};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ErrorType {
-    Parse,   // parse error from Pest
-    Into,    // error while going into `root` pair
     Badline, // un-parseable line found in input
     MultipleEmptyPostings,
     UnbalancedTransaction,
@@ -21,9 +19,9 @@ pub enum ErrorType {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct BeanError {
-    ty: ErrorType, // not yet used anywhere
-    debug: DebugLine,
-    msg: String,
+    pub ty: ErrorType, // not yet used anywhere
+    pub debug: DebugLine,
+    pub msg: String,
 }
 
 impl BeanError {

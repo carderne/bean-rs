@@ -18,3 +18,7 @@ rust_decimal = "1.33.1"
 [[bin]]
 name = "bean-rs"
 path = "src/main.rs"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "2.1"
