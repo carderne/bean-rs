@@ -45,14 +45,15 @@ pub fn balance(path: &str) -> (AccBal, Vec<BeanError>) {
 
 /// Load the ledger from Python
 #[pyfunction]
+#[pyo3(name = "load")]
 fn py_load(path: &str) -> Ledger {
     let text = std::fs::read_to_string(path).expect("cannot read file");
     load(text)
 }
 
-/// `bean_rs` importable from Python
+/// `_bean_rs` importable from Python
 #[pymodule]
-fn bean_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _bean_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_load, m)?)?;
     Ok(())
 }

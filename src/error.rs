@@ -1,3 +1,4 @@
+use pyo3::pyclass;
 use std::fmt;
 
 use crate::data::{DebugLine, Directive};
@@ -16,10 +17,10 @@ pub enum ErrorType {
     InvalidCcy,
 }
 
-#[allow(dead_code)]
-#[derive(Debug)]
+#[pyclass]
+#[derive(Clone, Debug)]
 pub struct BeanError {
-    pub ty: ErrorType, // not yet used anywhere
+    pub ty: ErrorType,
     pub debug: DebugLine,
     pub msg: String,
 }

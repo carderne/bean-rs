@@ -6,6 +6,7 @@ use crate::error::BeanError;
 #[pyclass]
 pub struct Ledger {
     pub dirs: Vec<Directive>,
+    #[pyo3(get)]
     pub errs: Vec<BeanError>,
     #[pyo3(get)]
     pub opts: Options,

@@ -10,4 +10,4 @@ cov:
 
 .PHONY: py
 py:
-	maturin develop
+	rye run maturin develop --pip-path ~/.rye/self/bin/pip
