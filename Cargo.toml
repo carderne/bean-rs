@@ -5,6 +5,7 @@ authors = ["Chris Arderne <chris@rdrn.me"]
 description = "beancount clone in Rust"
 version = "0.0.999"  # set by Github Actions CI
 edition = "2021"
+repository = "https://github.com/carderne/bean-rs"
 
 [dependencies]
 chrono = "0.4.31"
