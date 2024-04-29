@@ -1,5 +1,7 @@
 # bean-rs
 
+**Project paused until [this PR in PyO3](https://github.com/PyO3/pyo3/pull/4135) (or something similar) gets merged.**
+
 Basic [beancount](https://github.com/beancount/beancount) clone (one day...) in Rust!
 
 Still very very alpha and doesn't do most things that are necessary to be at all useful.
