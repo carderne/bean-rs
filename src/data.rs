@@ -116,6 +116,7 @@ impl Amount {
     }
 }
 
+#[pyclass]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConfigCustom {
     pub date: NaiveDate,
@@ -161,6 +162,7 @@ impl fmt::Display for Metadata {
     }
 }
 
+#[pyclass]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Commodity {
     pub date: NaiveDate,
@@ -211,6 +213,7 @@ impl fmt::Display for Commodity {
     }
 }
 
+#[pyclass]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Open {
     pub date: NaiveDate,
@@ -267,6 +270,7 @@ impl fmt::Display for Open {
     }
 }
 
+#[pyclass]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Close {
     pub date: NaiveDate,
@@ -302,6 +306,7 @@ impl fmt::Display for Close {
     }
 }
 
+#[pyclass]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Balance {
     pub date: NaiveDate,
@@ -342,6 +347,7 @@ impl fmt::Display for Balance {
     }
 }
 
+#[pyclass]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pad {
     pub date: NaiveDate,
@@ -381,6 +387,7 @@ impl fmt::Display for Pad {
     }
 }
 
+#[pyclass]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Price {
     pub date: NaiveDate,
@@ -421,6 +428,7 @@ impl fmt::Display for Price {
     }
 }
 
+#[pyclass]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Document {
     pub date: NaiveDate,
@@ -460,6 +468,7 @@ impl fmt::Display for Document {
     }
 }
 
+#[pyclass]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Note {
     pub date: NaiveDate,
@@ -499,6 +508,7 @@ impl fmt::Display for Note {
     }
 }
 
+#[pyclass]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Query {
     pub date: NaiveDate,
@@ -588,11 +598,14 @@ impl fmt::Display for Posting {
     }
 }
 
+#[pyclass]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
     pub date: NaiveDate,
     pub ty: String,
+    #[pyo3(get)]
     pub payee: Option<String>,
+    #[pyo3(get)]
     pub narration: String,
     pub tag: Option<String>,  // TODO can have multiple
     pub link: Option<String>, // TODO can have multiple
@@ -734,6 +747,7 @@ impl fmt::Display for Transaction {
 
 /// The "ledger" is made up of Directives
 /// Most operations will be done by looping through a Vec of these
+#[pyclass]
 #[derive(Clone, Debug)]
 pub enum Directive {
     ConfigCustom(ConfigCustom),

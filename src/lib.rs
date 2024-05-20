@@ -12,7 +12,7 @@ pub mod utils;
 
 use pyo3::prelude::*;
 
-use data::AccBal;
+use data::{AccBal, Directive, Transaction};
 
 use crate::error::BeanError;
 use crate::ledger::Ledger;
@@ -55,5 +55,7 @@ fn py_load(path: &str) -> Ledger {
 #[pymodule]
 fn _bean_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_load, m)?)?;
+    m.add_class::<Transaction>()?;
+    m.add_class::<Directive>()?;
     Ok(())
 }
