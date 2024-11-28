@@ -1,4 +1,4 @@
-import datetime
+from bean_rs._bean_rs import Directive
 
 class Options:
     title: str
@@ -6,9 +6,6 @@ class Options:
 
 class BeanError(Exception):
     pass
-
-class Directive:
-    date: datetime.date
 
 class Ledger:
     dirs: list[Directive]
