@@ -24,8 +24,8 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/carderne/signal-export"
-repository = "https://github.com/carderne/signal-export"
+homepage = "https://github.com/carderne/bean-rs"
+repository = "https://github.com/carderne/bean-rs"
 
 [tool.rye]
 managed = true
